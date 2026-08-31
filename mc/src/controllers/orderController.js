@@ -5,12 +5,12 @@ const VALID_PAYMENT_METHODS = ["cash", "credit", "qr"];
 exports.createOrder = async (req, res) => {
   const { items, paymentMethod } = req.body;
 
-  // 1. ตรวจสอบว่ามีรายการสินค้าหรือไม่ (AC-01)
+  // 1. ตรวจสอบว่ามีรายการสินค้าหรือไม่ (AC-01 ของ US-01)
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
   }
 
-  // 2. ตรวจสอบชื่อสินค้าว่าครบถ้วนและถูกต้องหรือไม่ (AC-02)
+  // 2. ตรวจสอบชื่อสินค้าว่าครบถ้วนและถูกต้องหรือไม่ (AC-02 ของ US-01)
   const hasInvalidName = items.some(
     (item) => typeof item.name !== "string" || item.name.trim() === "",
   );
@@ -18,7 +18,7 @@ exports.createOrder = async (req, res) => {
     return res.status(400).json({ error: "ต้องระบุชื่อสินค้าให้ครบทุกรายการ" });
   }
 
-  // 3. ตรวจสอบราคาสินค้าว่าสมเหตุสมผลหรือไม่ (> 0) (AC-03)
+  // 3. ตรวจสอบราคาสินค้าว่าสมเหตุสมผลหรือไม่ (> 0) (AC-03 ของ US-01)
   const hasInvalidPrice = items.some(
     (item) => !Number.isFinite(item.price) || item.price <= 0,
   );
@@ -26,7 +26,7 @@ exports.createOrder = async (req, res) => {
     return res.status(400).json({ error: "ราคาสินค้า (price) ต้องมากกว่า 0" });
   }
 
-  // 4. ตรวจสอบจำนวนสินค้าว่าเป็นจำนวนเต็มและ > 0 หรือไม่ (AC-04)
+  // 4. ตรวจสอบจำนวนสินค้าว่าเป็นจำนวนเต็มและ > 0 หรือไม่ (AC-04 ของ US-01)
   const hasInvalidQuantity = items.some(
     (item) => !Number.isInteger(item.quantity) || item.quantity <= 0,
   );
@@ -39,7 +39,7 @@ exports.createOrder = async (req, res) => {
     return res.status(400).json({ error: "paymentMethod ไม่ถูกต้องหรือไม่ได้ระบุ" });
   }
 
-  // 6. คำนวณยอดรวม (คำนวณฝั่ง Backend เสมอ) (AC-05)
+  // 6. คำนวณยอดรวม (คำนวณฝั่ง Backend เสมอ) (AC-05 ของ US-01)
   const totalAmount = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
@@ -47,11 +47,19 @@ exports.createOrder = async (req, res) => {
 
   // 7. บันทึกข้อมูลลงฐานข้อมูล
   try {
+    // Controller ไม่มีคำสั่ง SQL หลงเหลืออยู่เลย เรียกผ่าน Model แทน
     const orderId = await orderModel.create(paymentMethod, totalAmount);
-    res.status(201).json({ orderId, totalAmount, message: "สร้างออเดอร์สำเร็จ" });
+
+    res.status(201).json({ orderId, totalAmount, message: "สร้างออเดอร์สำเร็จ" 
+
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกออเดอร์" });
   }
 };
 
+exports.getAllOrders = async (req, res) => {
+  const orders = await orderModel.findAll();
+  res.json(orders);
+};
