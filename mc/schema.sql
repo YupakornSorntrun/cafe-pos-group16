@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS cafe_pos;
+USE cafe_pos;
+
+CREATE TABLE orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  payment_method VARCHAR(20) NOT NULL,
+  total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL
+);
