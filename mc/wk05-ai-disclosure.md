@@ -3,7 +3,7 @@
 ### 1. ใช้ AI หรือไม่?
 
 - [ ] ไม่ได้ใช้ AI
-- [ x ] ใช้ AI (กรุณาระบุรายละเอียด)
+- [x] ใช้ AI (กรุณาระบุรายละเอียด)
 
 ### 2. เครื่องมือ AI ที่ใช้:
 
@@ -14,7 +14,7 @@
 
 - [ ] Requirement Analysis
 - [ ] Database Design 
-- [ x ] System Architecture - ส่วน: **ไฟล์ orderController**
+- [x] System Architecture - ส่วน: **ไฟล์ orderController**
 - [ ] Document/Grammar Check 
 - [ ] อื่นๆ
 
@@ -35,7 +35,7 @@
 
 ### 8. Diagram/เอกสารต้นทางของ sprint นี้:
 
-- นำเอกสาร Class diagram, Functional requirment FR-01 และ FR-02, Use case description, Use story US-01, Acceptance criteria AC-01 ถึง AC-05 จากสัปดาห์ที่ 4 มาต่อยอดโดยใช้ในการเปรียบกับโค้ด
+- นำเอกสาร Class diagram, Functional requirment FR-01 และ FR-02, Use case description, Use story US-01, Acceptance criteria AC-01 ถึง AC-05 จากสัปดาห์ที่ 4 มาต่อยอด
 
 ### 9. ส่วนที่ AI ช่วยเขียนโค้ด:
 - เป็นผู้ช่วยตรวจสอบ error ในการทดสอบ Postman
@@ -44,7 +44,7 @@
 - สมาชิกทุกคนสามารถเข้าใจตัวโค้ดได้ เนื่องจากเป็นช่วงเริ่มต้นของการเขียนโค้ดจึงยังไม่มีโค้ดที่มีการเปลี่ยนแปลงนอกเหนือจากโค้ดที่อาจารย์ให้มา
 
 ### 11. โค้ด/schema/สถาปัตยกรรมมีจุดใดต่างจาก diagram เดิมหรือไม่:
-- [ x ] ไม่ต่าง
+- [x] ไม่ต่าง
 - [ ] ต่าง 
 
 ---
