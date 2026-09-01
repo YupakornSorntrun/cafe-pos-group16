@@ -12,3 +12,9 @@ exports.findAll = async () => {
   const [rows] = await db.query("SELECT * FROM orders");
   return rows;
 };
+
+exports.deleteOrder = async (orderId) => {
+  // แก้ไขเป็น WHERE id = ? ให้ตรงกับชื่อคอลัมน์ในตาราง orders
+  const [result] = await db.query("DELETE FROM orders WHERE id = ?", [orderId]);
+  return result.affectedRows;
+};

@@ -37,7 +37,7 @@ docker exec -it mysql_db mysql -u root -proot123456 -e "SHOW DATABASES;"
 ```env
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=my_password
+DB_PASSWORD=123456
 DB_NAME=cafe_pos
 PORT=3000
 ```
