@@ -7,7 +7,9 @@ exports.createOrder = async (req, res) => {
 
   // 1. ตรวจสอบว่ามีรายการสินค้าหรือไม่ (AC-01 ของ US-01)
   if (!Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
+    return res
+      .status(400)
+      .json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
   }
 
   // 2. ตรวจสอบชื่อสินค้าว่าครบถ้วนและถูกต้องหรือไม่ (AC-02 ของ US-01)
@@ -31,12 +33,16 @@ exports.createOrder = async (req, res) => {
     (item) => !Number.isInteger(item.quantity) || item.quantity <= 0,
   );
   if (hasInvalidQuantity) {
-    return res.status(400).json({ error: "จำนวนสินค้า (quantity) ต้องมากกว่า 0" });
+    return res
+      .status(400)
+      .json({ error: "จำนวนสินค้า (quantity) ต้องมากกว่า 0" });
   }
 
   // 5. ตรวจสอบช่องทางการชำระเงิน
   if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) {
-    return res.status(400).json({ error: "paymentMethod ไม่ถูกต้องหรือไม่ได้ระบุ" });
+    return res
+      .status(400)
+      .json({ error: "paymentMethod ไม่ถูกต้องหรือไม่ได้ระบุ" });
   }
 
   // 6. คำนวณยอดรวม (คำนวณฝั่ง Backend เสมอ) (AC-05 ของ US-01)
@@ -50,9 +56,9 @@ exports.createOrder = async (req, res) => {
     // Controller ไม่มีคำสั่ง SQL หลงเหลืออยู่เลย เรียกผ่าน Model แทน
     const orderId = await orderModel.create(paymentMethod, totalAmount);
 
-    res.status(201).json({ orderId, totalAmount, message: "สร้างออเดอร์สำเร็จ" 
-
-    });
+    res
+      .status(201)
+      .json({ orderId, totalAmount, message: "สร้างออเดอร์สำเร็จ" });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกออเดอร์" });
@@ -62,4 +68,25 @@ exports.createOrder = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
   const orders = await orderModel.findAll();
   res.json(orders);
+};
+
+exports.deleteOrder = async (req, res) => {
+  const orderId = parseInt(req.params.id, 10);
+
+  if (Number.isNaN(orderId) || orderId <= 0) {
+    return res.status(400).json({ error: "ID ของออเดอร์ไม่ถูกต้อง" });
+  }
+
+  try {
+    const affectedRows = await orderModel.deleteOrder(orderId);
+
+    if (affectedRows === 0) {
+      return res.status(404).json({ error: "ไม่พบออเดอร์ที่ต้องการลบ" });
+    }
+
+    res.status(200).json({ message: "ลบออเดอร์ออกจากระบบสำเร็จ" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "เกิดข้อผิดพลาดในการลบออเดอร์" });
+  }
 };
