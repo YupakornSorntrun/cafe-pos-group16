@@ -50,4 +50,4 @@
 ---
 ### ไฟล์ Repository
 
-**https://github.com/YupakornSorntrun/cafe_v.0.git**
+**https://github.com/YupakornSorntrun/cafe-pos-group16.git**
