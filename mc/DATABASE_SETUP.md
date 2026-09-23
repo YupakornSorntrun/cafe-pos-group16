@@ -56,7 +56,56 @@ npm run dev
 
 หากเริ่มทำงานสำเร็จ จะมีข้อความระบุว่า Server รันอยู่ที่ port `3000`
 
-## 5. ใช้ Git Branch
+## 5. Import ข้อมูลจำลอง (Seed Data) สำหรับทดสอบ
+
+หลังจากสร้าง Database ด้วย `schema.sql` แล้ว ให้รันไฟล์ `seed.sql` เพื่อเพิ่มข้อมูลตั้งต้น (เช่น สาขา พนักงาน เมนู) ให้ระบบพร้อมสำหรับการทดสอบ API:
+
+```bash
+docker exec -i mysql_db mysql -u root -proot123456 < seed.sql
+```
+
+> **หมายเหตุ:** หากข้อมูลภาษาไทยเพี้ยน หรือต้องการรีเซ็ต Database ให้รันคำสั่งเหล่านี้ตามลำดับผ่าน CMD (Command Prompt):
+> 1. `docker exec -i mysql_db mysql -u root -proot123456 -e "DROP DATABASE cafe_pos;"`
+> 2. `docker exec -i mysql_db mysql -u root -proot123456 < schema.sql`
+> 3. `docker exec -i mysql_db mysql -u root -proot123456 < seed.sql`
+
+## 6. ทดสอบ API ด้วย Postman
+
+เมื่อรันเซิร์ฟเวอร์ (`npm run dev`) และนำเข้าข้อมูลตั้งต้นแล้ว สามารถทดสอบระบบออเดอร์ได้ตามนี้ (ไม่ต้องใส่ Headers นอกเหนือจาก `Content-Type: application/json`):
+
+### 1) สร้างออเดอร์ใหม่
+- **Method:** `POST`
+- **URL:** `http://localhost:3000/api/orders`
+- **Body (raw -> JSON):**
+  ```json
+  {
+    "branchId": 1,
+    "employeeId": 1,
+    "paymentMethod": "cash",
+    "items": [
+      { "menuId": 1, "price": 50, "quantity": 2 },
+      { "menuId": 2, "price": 65, "quantity": 1 }
+    ]
+  }
+  ```
+
+### 2) เรียกดูออเดอร์ทั้งหมด
+- **Method:** `GET`
+- **URL:** `http://localhost:3000/api/orders`
+
+### 3) ลบเฉพาะ "บางเมนู" ออกจากออเดอร์
+หากลูกค้าเปลี่ยนใจไม่เอาบางเมนู ระบบจะหักยอดเงินรวมให้โดยอัตโนมัติ
+- **Method:** `DELETE`
+- **URL:** `http://localhost:3000/api/orders/:orderId/items/:itemId`
+- **ตัวอย่าง:** `DELETE http://localhost:3000/api/orders/2/items/1` (ลบไอเทม 1 จากออเดอร์ 2)
+
+### 4) ยกเลิก/ลบออเดอร์ทั้งบิล
+ระบบจะลบข้อมูลเมนูในออเดอร์ให้ก่อนลบบิลอัตโนมัติ (ไม่ติด FK constraint)
+- **Method:** `DELETE`
+- **URL:** `http://localhost:3000/api/orders/:orderId`
+- **ตัวอย่าง:** `DELETE http://localhost:3000/api/orders/1` (ลบออเดอร์ 1)
+
+## 7. ใช้ Git Branch
 
 ตรวจสอบ Branch ปัจจุบันก่อนเริ่มทำงาน:
 
@@ -79,7 +128,7 @@ git switch week5/add-order
 git switch -c feature/order-api
 ```
 
-## 6. Commit และ Push
+## 8. Commit และ Push
 
 ตรวจสอบและบันทึกงาน:
 
