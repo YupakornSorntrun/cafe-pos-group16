@@ -103,9 +103,16 @@ CREATE TABLE orders (
     order_id        INT             AUTO_INCREMENT PRIMARY KEY,
     branch_id       INT             NOT NULL,
     employee_id     INT             NOT NULL,
+    order_type      ENUM('dine_in', 'takeaway') NOT NULL,
+    table_number    VARCHAR(10)     NULL,
     payment_method  VARCHAR(20)     NOT NULL,
     payment_status  ENUM('unpaid', 'paid') NOT NULL DEFAULT 'unpaid',
+    subtotal_amount DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    discount_amount DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     total_amount    DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    amount_received DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    change_amount   DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
+    barista_status  ENUM('pending', 'preparing', 'completed') NOT NULL DEFAULT 'pending',
     created_at      DATETIME        NOT NULL,
 
     INDEX idx_orders_branch_id (branch_id),
@@ -162,6 +169,22 @@ CREATE TABLE stock_movements (
         ON DELETE RESTRICT ON UPDATE CASCADE,
 
     CONSTRAINT fk_stock_movements_order
+        FOREIGN KEY (order_id) REFERENCES orders(order_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------------
+-- 10. RECEIPTS
+-- -----------------------------------------------------------
+CREATE TABLE receipts (
+    receipt_id      INT             AUTO_INCREMENT PRIMARY KEY,
+    order_id        INT             NOT NULL,
+    receipt_number  VARCHAR(50)     NOT NULL UNIQUE,
+    printed_at      DATETIME        NOT NULL,
+
+    INDEX idx_receipts_order_id (order_id),
+
+    CONSTRAINT fk_receipts_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id)
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

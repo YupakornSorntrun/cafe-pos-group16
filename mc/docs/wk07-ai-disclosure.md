@@ -14,7 +14,7 @@
 
 ### 3. งานส่วนไหนใช้ AI:
 
-- [ ] Requirement Analysis
+- [x] Requirement Analysis - ส่วน: สอบทาน Use Case เทียบกับ ER Diagram เพื่อหาช่องโหว่ (Gap Analysis)
 - [x] Database Design - ส่วน: ER Diagram, Entity/Relationship, Cardinality และการตรวจสอบ 3NF
 - [x] System Architecture - ส่วน: `schema.sql` และ Model ที่เกี่ยวข้องกับฐานข้อมูล
 - [ ] Document/Grammar Check
@@ -28,15 +28,15 @@
 
 #### Claude ผ่าน Antigravity IDE
 
-> "วิเคราะห์โครงสร้างโปรเจกต์ปัจจุบันและเปรียบเทียบกับ ER Diagram ของระบบ Cafe POS Week 7 จากนั้นตรวจสอบและปรับ schema.sql และ Model ให้สอดคล้องกับ ER Diagram โดยตรวจสอบ field, primary key, foreign key, relationship และ 3NF โดยไม่เปลี่ยน architecture ของโปรเจกต์โดยไม่จำเป็น"
+> "ช่วยตรวจสอบและปรับปรุง ER Diagram + `schema.sql` ของระบบ Cafe POS โดยให้สอดคล้องกับ Use Case Description ของกลุ่ม โดยต้องวิเคราะห์ช่องโหว่ (Gap Analysis) และเชื่อมโยงทุกส่วนเข้าด้วยกันแบบ Top-Down (Use Case → ER → Schema)"
 
 ### 5. ผลลัพธ์จาก AI:
 
-AI ช่วยวิเคราะห์และตรวจสอบโครงสร้างฐานข้อมูลของระบบ Cafe POS โดยแนะนำให้มี entity ได้แก่ Branches, Employees, Categories, Menu Items, Ingredients, Menu Item Ingredients, Orders, Order Items และ Stock Movements พร้อมระบุ primary key, foreign key และ cardinality ของแต่ละความสัมพันธ์
+AI ช่วยวิเคราะห์และตรวจสอบโครงสร้างฐานข้อมูลของระบบ Cafe POS โดยแนะนำให้มี entity ได้แก่ Branches, Employees, Categories, Menu Items, Ingredients, Menu Item Ingredients, Orders, Order Items, Stock Movements และ Receipts พร้อมระบุ primary key, foreign key และ cardinality ของแต่ละความสัมพันธ์
 
-AI ยังช่วยตรวจสอบความสอดคล้องระหว่าง ER Diagram, `schema.sql` และ Model เช่น `MenuModel`, `OrderModel`, `OrderItemModel` และ `EmployeeModel` รวมถึงตรวจสอบเรื่อง normalization และ 3NF
+นอกจากนี้ AI ช่วยสอบทาน `wk04-user-stories.md` (Use Case) เทียบกับ ER Diagram และพบช่องโหว่ของข้อมูล (เช่น ขาดประเภทการทาน, เลขโต๊ะ, ส่วนลด, เงินที่รับ, เงินทอน, สถานะบาริสต้า, ใบเสร็จ) จึงได้ช่วยปรับแก้ `schema.sql` และ `wk07-er-diagram.md` ให้เชื่อมโยงกันอย่างสมบูรณ์แบบ 100%
 
-สำหรับส่วน Coding AI ถูกใช้เป็นผู้ช่วยในการตรวจสอบและปรับโค้ดให้ field และ column สอดคล้องกับโครงสร้างฐานข้อมูลที่ออกแบบไว้
+สำหรับส่วน Coding AI ถูกใช้เป็นผู้ช่วยในการตรวจสอบและปรับโค้ด Model และ Controller ให้รองรับฟิลด์ใหม่ทั้งหมด
 
 ### 6. การปรับแต่งของนิสิตเอง:
 
@@ -58,23 +58,24 @@ AI ถูกใช้เป็นเครื่องมือช่วยว�
 
 - `CASE-STUDY-COFFEE-SHOP-STD.md`
 - Class Diagram จากสัปดาห์ที่ 6
+- `wk04-user-stories.md` (Use Case Description)
 - ER Diagram ของระบบ Cafe POS Week 7
 - Requirement ของงาน Week 7
 - โครงสร้าง Model และ Controller ที่มีอยู่จาก Sprint ก่อนหน้า
 
 ---
 
-## 9. ส่วนที่ AI ช่วยเขียนโค้ด:
+## 9. ส่วนที่ AI ช่วยเขียน/แก้ไข:
 
-AI ช่วยตรวจสอบและปรับปรุงส่วนที่เกี่ยวข้องกับ Database และ Model ได้แก่
+AI ช่วยตรวจสอบและปรับปรุงส่วนที่เกี่ยวข้องกับ Requirement, Database, และ Model ได้แก่
 
-- `wk07-schema.sql`
-- `MenuModel`
-- `OrderModel`
-- `OrderItemModel`
-- `EmployeeModel`
+- `schema.sql` (ปรับโครงสร้างใหม่เป็น 10 ตาราง)
+- `wk07-er-diagram.md` (เพิ่มความสัมพันธ์ Receipts)
+- `src/models/menuModel.js`
+- `src/models/orderModel.js`
+- `src/controllers/orderController.js`
 
-รวมถึงช่วยตรวจสอบความสอดคล้องระหว่างชื่อ field ใน Model กับ column ในฐานข้อมูล
+รวมถึงช่วยตรวจสอบความสอดคล้องระหว่างเอกสารทุกขั้นตอน (Top-Down)
 
 > หมายเหตุ: รายการไฟล์ด้านบนให้ปรับตามไฟล์ที่ AI ได้แก้จริงใน repository ก่อนส่งงาน
 
@@ -89,7 +90,7 @@ AI ช่วยตรวจสอบและปรับปรุงส่ว�
 ## 11. โค้ด/schema/สถาปัตยกรรมมีจุดใดต่างจาก diagram เดิมหรือไม่:
 
 - [ ] ไม่ต่าง
-- [x] ต่าง — เหตุผล: มีการปรับโครงสร้าง Database และ Model ให้สอดคล้องกับ ER Diagram ของ Week 7 ซึ่งมีการเพิ่ม/ปรับ entity เช่น `branches`, `categories`, `ingredients`, `menu_item_ingredients` และ `stock_movements` รวมถึงเพิ่ม `payment_status` ใน `orders`
+- [x] ต่าง — เหตุผล: มีการวิเคราะห์ Use Case เพิ่มเติมร่วมกับ ER Diagram (Gap Analysis) จึงมีการปรับโครงสร้างให้สอดคล้องกันแบบ Top-Down โดยเพิ่มตาราง `receipts` และเพิ่ม 7 ฟิลด์ใน `orders` (`order_type`, `table_number`, `subtotal_amount`, `discount_amount`, `amount_received`, `change_amount`, `barista_status`) เพื่อให้รองรับการทำงานได้จริงตาม Use Case
 
 และได้ปรับปรุง diagram/เอกสารของสัปดาห์นี้ให้ตรงกับโครงสร้างล่าสุดแล้ว:
 
