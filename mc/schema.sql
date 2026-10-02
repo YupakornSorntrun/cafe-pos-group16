@@ -51,11 +51,17 @@ CREATE TABLE categories (
 -- -----------------------------------------------------------
 CREATE TABLE menu_items (
     menu_id         INT             AUTO_INCREMENT PRIMARY KEY,
+    branch_id       INT             NOT NULL,
     category_id     INT             NOT NULL,
     name            VARCHAR(100)    NOT NULL,
     price           DECIMAL(10,2)   NOT NULL,
 
+    INDEX idx_menu_items_branch_id (branch_id),
     INDEX idx_menu_items_category_id (category_id),
+
+    CONSTRAINT fk_menu_items_branch
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
 
     CONSTRAINT fk_menu_items_category
         FOREIGN KEY (category_id) REFERENCES categories(category_id)
@@ -106,7 +112,7 @@ CREATE TABLE orders (
     order_type      ENUM('dine_in', 'takeaway') NOT NULL,
     table_number    VARCHAR(10)     NULL,
     payment_method  VARCHAR(20)     NOT NULL,
-    payment_status  ENUM('unpaid', 'paid') NOT NULL DEFAULT 'unpaid',
+    payment_status  ENUM('unpaid', 'paid', 'voided') NOT NULL DEFAULT 'unpaid',
     subtotal_amount DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     discount_amount DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     total_amount    DECIMAL(10,2)   NOT NULL DEFAULT 0.00,

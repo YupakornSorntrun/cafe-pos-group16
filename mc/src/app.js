@@ -15,6 +15,9 @@ app.use(express.static("public"));
 const orderRoutes = require("./routes/orderRoutes");
 app.use("/api/orders", orderRoutes);
 
+const menuRoutes = require("./routes/menuRoutes");
+app.use("/api/menu", menuRoutes);
+
 // 404 handler — ถ้าไม่ match route ไหนเลย
 app.use((req, res) => {
   res.status(404).json({
