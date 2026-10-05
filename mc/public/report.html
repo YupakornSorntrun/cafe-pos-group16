@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baristech Cafe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="filters">
+        <div class="f"><label for="from">ตั้งแต่วันที่</label><input type="date" id="from"></div>
+        <div class="f"><label for="to">ถึงวันที่</label><input type="date" id="to"></div>
+        <div class="f"><label>ช่วงเวลา</label>
+          <div class="pill-tabs" id="presets">
+            <button class="pill" data-p="today" type="button">วันนี้</button>
+            <button class="pill" data-p="7d" type="button">7 วันล่าสุด</button>
+            <button class="pill" data-p="month" type="button">เดือนนี้</button>
+          </div>
+        </div>
+        <div class="f"><label>สรุปตาม</label>
+          <div class="seg" id="groupSeg" style="width:150px"><button type="button" data-g="day" class="active">รายวัน</button><button type="button" data-g="month">รายเดือน</button></div>
+        </div>
+        <button class="btn" id="printBtn" type="button">พิมพ์รายงาน</button>
+      </div>
+      <div class="err" id="rangeErr" style="margin:-8px 0 12px"></div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="two">
+        <div class="panel"><div class="panel-head"><h2 id="groupTitle">สรุปยอดขายรายวัน</h2></div>
+          <table><thead><tr><th id="groupCol">วันที่</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย</th></tr></thead><tbody id="groupRows"></tbody></table></div>
+        <div class="panel"><div class="panel-head"><h2>แยกตามวิธีชำระเงิน</h2></div>
+          <table><thead><tr><th>วิธีชำระ</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย</th><th style="width:90px"></th></tr></thead><tbody id="payRows"></tbody></table></div>
+      </div>
+      <div class="panel" id="branchPanel" style="margin-bottom:16px;display:none"><div class="panel-head"><h2>แยกตามสาขา</h2></div>
+        <table><thead><tr><th>สาขา</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย</th><th style="width:200px"></th></tr></thead><tbody id="branchRows"></tbody></table></div>
+
+      <div class="panel"><div class="panel-head"><h2>รายการออเดอร์</h2><span class="hint" id="orderCount"></span></div>
+        <table><thead><tr><th>คิว</th><th>เวลา</th><th>สาขา</th><th>ประเภท</th><th>ชำระโดย</th><th class="r">ยอดสุทธิ</th><th>สถานะ</th><th style="width:170px"></th></tr></thead><tbody id="orderRows"></tbody></table></div>
+    </div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/report.js"></script>
+</body>
+</html>

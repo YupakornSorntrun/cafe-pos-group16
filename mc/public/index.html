@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แคชเชียร์ · Baristech Cafe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="pos">
+      <section class="pos-products">
+        <div class="pill-tabs" id="cats"></div>
+        <div class="grid" id="grid"></div>
+      </section>
+
+      <aside class="order-panel">
+        <div class="order-scroll">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0">รายการสั่งซื้อ</h2><button class="btn sm" id="todayBtn" type="button">ออเดอร์วันนี้</button></div>
+
+          <div class="row">
+            <label>ประเภท</label>
+            <div class="seg" id="typeSeg">
+              <button type="button" data-type="dine_in" class="active">ทานที่ร้าน</button>
+              <button type="button" data-type="takeaway">กลับบ้าน</button>
+            </div>
+          </div>
+          <div class="row" id="tableRow">
+            <label for="table">เลขโต๊ะ <span class="req">*</span></label>
+            <div class="col">
+              <input type="text" id="table" maxlength="10" placeholder="เช่น A1, 12" autocomplete="off">
+              <div class="err" id="tableErr"></div>
+            </div>
+          </div>
+
+          <div class="sec-head"><span>รายการ</span><button class="link" id="clearCart" type="button">ล้างทั้งหมด</button></div>
+          <div id="cart"></div>
+        </div>
+
+        <div class="summary">
+          <div class="sum-row"><span>ยอดรวม</span><span class="v num" id="subtotal">฿0.00</span></div>
+          <div class="sum-row">
+            <span>ส่วนลด (บาท)</span>
+            <input type="number" id="discount" min="0" step="1" placeholder="0" inputmode="decimal">
+          </div>
+          <div class="err" id="discountErr" style="text-align:right"></div>
+          <div class="sum-row total"><span>ยอดสุทธิ</span><span class="v num" id="total">฿0.00</span></div>
+
+          <div class="sec-head" style="margin-top:14px"><span>การชำระเงิน</span></div>
+          <div class="seg" id="paySeg">
+            <button type="button" data-pay="cash" class="active">เงินสด</button>
+            <button type="button" data-pay="credit">บัตร</button>
+            <button type="button" data-pay="qr">QR</button>
+          </div>
+          <div id="cashBox" style="margin-top:10px">
+            <div class="sum-row" style="margin:0"><span>รับเงินมา (บาท)</span>
+              <input type="number" id="received" min="0" step="1" inputmode="decimal" placeholder="0">
+            </div>
+            <div class="quick" id="quick"></div>
+            <div class="err" id="receivedErr" style="text-align:right"></div>
+          </div>
+          <div class="change-box" id="changeBox"><span>เงินทอน</span><span class="num" id="change">฿0.00</span></div>
+
+          <button class="btn primary block" id="payBtn" type="button" disabled>ชำระเงิน</button>
+          <div class="reason" id="reason"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/pos.js"></script>
+</body>
+</html>

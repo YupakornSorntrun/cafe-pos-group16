@@ -7,6 +7,19 @@ exports.getConnection = async () => {
 
 // ---------- CREATE ----------
 // BR-03: ใช้ connection ที่เปิด Transaction
+// ออกเลขคิวถัดไปของสาขาสำหรับ "วันนี้" (เวลาไทย) — ต้องเรียกใน transaction เดียวกับ createOrder
+// LAST_INSERT_ID(expr) ทำให้ได้ค่าใหม่แบบ atomic และล็อกแถวนับจนกว่าจะ COMMIT/ROLLBACK
+exports.nextQueueNo = async (conn, branchId) => {
+  await conn.query(
+    `INSERT INTO branch_daily_counters (branch_id, queue_date, last_no)
+     VALUES (?, CURDATE(), LAST_INSERT_ID(1))
+     ON DUPLICATE KEY UPDATE last_no = LAST_INSERT_ID(last_no + 1)`,
+    [branchId]
+  );
+  const [rows] = await conn.query("SELECT LAST_INSERT_ID() AS queueNo");
+  return Number(rows[0].queueNo);
+};
+
 exports.createOrder = async (
   conn,
   branchId,
@@ -15,13 +28,14 @@ exports.createOrder = async (
   tableNumber,
   paymentMethod,
   discountAmount,
-  amountReceived
+  amountReceived,
+  queueNo
 ) => {
   // const [result] = ... คือการทำ Array Destructuring
   // ปกติ mysql2 จะคืนค่ามา 2 อย่างคือ [ผลลัพธ์, ข้อมูลฟิลด์] เราแค่เอาตัวแรก (result) มาใช้
   const [result] = await conn.query(
-    `INSERT INTO orders (branch_id, employee_id, order_type, table_number, payment_method, payment_status, discount_amount, amount_received, barista_status, created_at)
-     VALUES (?, ?, ?, ?, ?, 'paid', ?, ?, 'pending', NOW())`,
+    `INSERT INTO orders (branch_id, employee_id, order_type, table_number, payment_method, payment_status, discount_amount, amount_received, barista_status, created_at, queue_date, queue_no)
+     VALUES (?, ?, ?, ?, ?, 'paid', ?, ?, 'pending', NOW(), CURDATE(), ?)`,
     [
       branchId,
       employeeId,
@@ -29,7 +43,8 @@ exports.createOrder = async (
       tableNumber || null,
       paymentMethod,
       discountAmount,
-      amountReceived
+      amountReceived,
+      queueNo
     ]
   );
   return result.insertId;
@@ -95,9 +110,51 @@ const ORDER_SELECT_QUERY = `
   LEFT JOIN order_items oi ON o.order_id = oi.order_id 
 `;
 
-exports.findAll = async () => {
-  const [rows] = await db.query(ORDER_SELECT_QUERY + `GROUP BY o.order_id`);
+// filters: { branchId, from, to } — from/to เป็น 'YYYY-MM-DD' (นับทั้งวันของ to)
+exports.findAll = async ({ branchId, from, to } = {}) => {
+  const where = [];
+  const params = [];
+  if (branchId) { where.push("o.branch_id = ?"); params.push(branchId); }
+  if (from) { where.push("o.created_at >= ?"); params.push(from); }
+  if (to) { where.push("o.created_at < DATE_ADD(?, INTERVAL 1 DAY)"); params.push(to); }
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")} ` : "";
+  const [rows] = await db.query(
+    ORDER_SELECT_QUERY + whereSql + `GROUP BY o.order_id ORDER BY o.created_at DESC, o.order_id DESC`,
+    params
+  );
   return rows;
+};
+
+// ออเดอร์ + รายการสินค้า (มีชื่อเมนู) + เลขที่ใบเสร็จ สำหรับแสดงใบเสร็จ
+exports.findDetail = async (orderId) => {
+  const order = await exports.findById(orderId);
+  if (!order) return null;
+  const [items] = await db.query(
+    `SELECT oi.menu_id, m.name, oi.quantity, oi.unit_price,
+            (oi.quantity * oi.unit_price) AS line_total
+     FROM order_items oi
+     JOIN menu_items m ON oi.menu_id = m.menu_id
+     WHERE oi.order_id = ?
+     ORDER BY oi.order_item_id`,
+    [orderId]
+  );
+  const [receipts] = await db.query(
+    `SELECT receipt_id, receipt_number, printed_at FROM receipts WHERE order_id = ? LIMIT 1`,
+    [orderId]
+  );
+  const [branches] = await db.query(
+    `SELECT name, address FROM branches WHERE branch_id = ?`, [order.branch_id]
+  );
+  const [employees] = await db.query(
+    `SELECT name FROM employees WHERE employee_id = ?`, [order.employee_id]
+  );
+  return {
+    ...order,
+    items,
+    receipt: receipts[0] || null,
+    branch: branches[0] || null,
+    employee_name: employees[0] ? employees[0].name : null,
+  };
 };
 
 exports.findById = async (orderId) => {
@@ -123,6 +180,15 @@ exports.findOrderItems = async (orderId) => {
 };
 
 // ---------- DELETE / VOID (Transaction) ----------
+// ล็อกแถวออเดอร์ (FOR UPDATE) แล้วคืนสถานะล่าสุด ใช้ใน transaction ยกเลิก
+exports.lockStatus = async (conn, orderId) => {
+  const [rows] = await conn.query(
+    "SELECT payment_status, barista_status FROM orders WHERE order_id = ? FOR UPDATE",
+    [orderId]
+  );
+  return rows[0];
+};
+
 exports.voidOrder = async (conn, orderId) => {
   // Soft Delete: แค่เปลี่ยนสถานะเป็น voided เพื่อรักษาประวัติใบเสร็จและบัญชี
   const [result] = await conn.query(

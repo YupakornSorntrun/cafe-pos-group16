@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Baristech Cafe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="toolbar">
+        <div class="pill-tabs" id="cats"></div>
+        <button class="btn primary" id="addBtn" type="button">+ เพิ่มเมนู</button>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th style="width:80px">รูป</th><th>ชื่อเมนู</th><th>หมวดหมู่</th><th>สูตร</th><th class="r">ราคา</th><th style="width:150px"></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/menu.js"></script>
+</body>
+</html>

@@ -102,14 +102,16 @@ exports.createOrder = async (req, res) => {
     await conn.beginTransaction();
 
     let orderId;
+    let queueNo;
     let receipt;
     let lowStockWarnings = [];
 
     try {
       // 3. บันทึกออเดอร์ (ไม่เก็บค่า total_amount และอื่นๆ ที่เป็น Derived Value แล้ว)
+      queueNo = await orderModel.nextQueueNo(conn, branchId);
       orderId = await orderModel.createOrder(
         conn, branchId, employeeId, orderType, tableNumber, paymentMethod,
-        discountAmount, amountReceived
+        discountAmount, amountReceived, queueNo
       );
 
       // 4. บันทึกไอเทมของออเดอร์
@@ -148,6 +150,7 @@ exports.createOrder = async (req, res) => {
       message: "Order successfully created",
       data: {
         orderId,
+        queueNo,
         totalAmount,
         changeAmount,
         receiptId: receipt.receiptId,
@@ -162,8 +165,22 @@ exports.createOrder = async (req, res) => {
 };
 
 exports.getAllOrders = async (req, res) => {
+  const branchId = parseInt(req.query.branchId, 10);
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  const { from, to } = req.query;
+  if ((from && !datePattern.test(from)) || (to && !datePattern.test(to))) {
+    return res.status(400).json({ error: "รูปแบบวันที่ต้องเป็น YYYY-MM-DD" });
+  }
+
+  // แคชเชียร์เห็นเฉพาะออเดอร์ของวันนี้ (เวลาไทย) ในสาขาตัวเอง
+  const filters = { branchId: branchId > 0 ? branchId : undefined, from, to };
+  if (req.user.role === "cashier") {
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
+    Object.assign(filters, { branchId: req.user.branchId, from: today, to: today });
+  }
+
   try {
-    const orders = await orderModel.findAll();
+    const orders = await orderModel.findAll(filters);
     res.json(orders);
   } catch (error) {
     console.error(error);
@@ -171,42 +188,69 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+exports.getOrderById = async (req, res) => {
+  const orderId = parseInt(req.params.id, 10);
+  if (Number.isNaN(orderId) || orderId <= 0) {
+    return res.status(400).json({ error: "ID ของออเดอร์ไม่ถูกต้อง" });
+  }
+  try {
+    const order = await orderModel.findDetail(orderId);
+    if (!order || (req.user.role === "cashier" && order.branch_id !== req.user.branchId)) {
+      return res.status(404).json({ error: "ไม่พบออเดอร์" });
+    }
+    res.json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "เกิดข้อผิดพลาดในการดึงข้อมูลออเดอร์" });
+  }
+};
+
+// ยกเลิก (void) ออเดอร์
+//  - เจ้าของ: ยกเลิกได้ทุกออเดอร์
+//  - แคชเชียร์: เฉพาะออเดอร์สาขาตัวเองที่บาริสต้ายังไม่เริ่มทำ (pending)
+//  - คืนสต็อกเฉพาะออเดอร์ที่ยังไม่เริ่มทำ (ถ้าทำไปแล้ว วัตถุดิบถูกใช้จริง)
 exports.deleteOrder = async (req, res) => {
   const orderId = parseInt(req.params.id, 10);
   if (Number.isNaN(orderId) || orderId <= 0) {
     return res.status(400).json({ error: "ID ของออเดอร์ไม่ถูกต้อง" });
   }
+  const isCashier = req.user.role === "cashier";
 
   try {
     const order = await orderModel.findById(orderId);
-    if (!order) {
+    if (!order || (isCashier && order.branch_id !== req.user.branchId)) {
       return res.status(404).json({ error: "ไม่พบออเดอร์ที่ต้องการยกเลิก" });
     }
-    if (order.payment_status === 'voided') {
-      return res.status(400).json({ error: "ออเดอร์นี้ถูกยกเลิกไปแล้ว (ไม่สามารถยกเลิกซ้ำได้)" });
-    }
 
-    // หาส่วนผสมที่ต้องคืน
     const orderItems = await orderModel.findOrderItems(orderId);
     const ingredientsToRestore = {};
     for (const item of orderItems) {
       const ingredients = await menuModel.findIngredientsByMenuId(item.menu_id);
       for (const ing of ingredients) {
-        const totalRestored = ing.quantity_used * item.quantity;
-        if (ingredientsToRestore[ing.ingredient_id]) {
-          ingredientsToRestore[ing.ingredient_id] += totalRestored;
-        } else {
-          ingredientsToRestore[ing.ingredient_id] = totalRestored;
-        }
+        ingredientsToRestore[ing.ingredient_id] =
+          (ingredientsToRestore[ing.ingredient_id] || 0) + ing.quantity_used * item.quantity;
       }
     }
 
-    // เริ่ม Transaction ลบออเดอร์ + คืนสต็อก
     const conn = await orderModel.getConnection();
     await conn.beginTransaction();
+    let restored = false;
     try {
-      for (const [ingId, qty] of Object.entries(ingredientsToRestore)) {
-        await orderModel.restoreStockAndRecordMovement(conn, ingId, qty, orderId);
+      // ล็อกแถวแล้วตรวจสถานะซ้ำ กัน race กับบาริสต้า/การยกเลิกซ้ำ
+      const locked = await orderModel.lockStatus(conn, orderId);
+      if (locked.payment_status === "voided") {
+        await conn.rollback();
+        return res.status(400).json({ error: "ออเดอร์นี้ถูกยกเลิกไปแล้ว (ไม่สามารถยกเลิกซ้ำได้)" });
+      }
+      if (isCashier && locked.barista_status !== "pending") {
+        await conn.rollback();
+        return res.status(409).json({ error: "บาริสต้าเริ่มทำออเดอร์นี้แล้ว แคชเชียร์ยกเลิกไม่ได้ — กรุณาแจ้งเจ้าของร้าน" });
+      }
+      restored = locked.barista_status === "pending";
+      if (restored) {
+        for (const [ingId, qty] of Object.entries(ingredientsToRestore)) {
+          await orderModel.restoreStockAndRecordMovement(conn, ingId, qty, orderId);
+        }
       }
       await orderModel.voidOrder(conn, orderId);
       await conn.commit();
@@ -217,7 +261,12 @@ exports.deleteOrder = async (req, res) => {
       conn.release();
     }
 
-    res.status(200).json({ message: "ยกเลิกออเดอร์ (Void) และคืนสต็อกเรียบร้อยแล้ว" });
+    res.status(200).json({
+      message: restored
+        ? "ยกเลิกออเดอร์และคืนสต็อกเรียบร้อยแล้ว"
+        : "ยกเลิกออเดอร์แล้ว (เริ่มทำไปแล้ว จึงไม่คืนสต็อก)",
+      stockRestored: restored,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการยกเลิกออเดอร์" });

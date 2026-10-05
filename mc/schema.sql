@@ -29,7 +29,9 @@ CREATE TABLE employees (
     employee_id     INT             AUTO_INCREMENT PRIMARY KEY,
     branch_id       INT             NOT NULL,
     name            VARCHAR(100)    NOT NULL,
-    role            ENUM('barista', 'cashier') NOT NULL,
+    role            ENUM('owner', 'barista', 'cashier') NOT NULL,
+    username        VARCHAR(50)     NULL UNIQUE,
+    password_hash   VARCHAR(200)    NULL,
 
     INDEX idx_employees_branch_id (branch_id),
 
@@ -55,6 +57,7 @@ CREATE TABLE menu_items (
     category_id     INT             NOT NULL,
     name            VARCHAR(100)    NOT NULL,
     price           DECIMAL(10,2)   NOT NULL,
+    image_url       VARCHAR(255)    NULL,
 
     INDEX idx_menu_items_branch_id (branch_id),
     INDEX idx_menu_items_category_id (category_id),
@@ -117,7 +120,10 @@ CREATE TABLE orders (
     amount_received DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     barista_status  ENUM('pending', 'preparing', 'completed') NOT NULL DEFAULT 'pending',
     created_at      DATETIME        NOT NULL,
+    queue_date      DATE            NOT NULL,
+    queue_no        INT             NOT NULL,
 
+    UNIQUE KEY uq_orders_queue (branch_id, queue_date, queue_no),
     INDEX idx_orders_branch_id (branch_id),
     INDEX idx_orders_employee_id (employee_id),
 
@@ -189,5 +195,23 @@ CREATE TABLE receipts (
 
     CONSTRAINT fk_receipts_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- -----------------------------------------------------------
+-- 11. BRANCH_DAILY_COUNTERS
+-- -----------------------------------------------------------
+-- ตัวนับเลขคิวรายวันต่อสาขา (A001, A002, ... เริ่มใหม่ทุกวัน)
+-- ออกเลขใน transaction เดียวกับการสร้างออเดอร์ด้วย INSERT ... ON DUPLICATE KEY UPDATE
+-- แถวถูกล็อกจนกว่าจะ COMMIT จึงไม่มีสองออเดอร์ได้เลขซ้ำ
+CREATE TABLE branch_daily_counters (
+    branch_id       INT             NOT NULL,
+    queue_date      DATE            NOT NULL,
+    last_no         INT             NOT NULL,
+
+    PRIMARY KEY (branch_id, queue_date),
+
+    CONSTRAINT fk_counters_branch
+        FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
         ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

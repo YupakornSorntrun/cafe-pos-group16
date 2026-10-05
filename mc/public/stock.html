@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>สต็อกวัตถุดิบ · Baristech Cafe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail" id="rail"></aside>
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+    <div class="page">
+      <div class="toolbar">
+        <div class="pill-tabs" id="filters">
+          <button class="pill active" data-f="all" type="button">ทั้งหมด</button>
+          <button class="pill" data-f="low" type="button">ใกล้หมด</button>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <span class="hint">วัตถุดิบใช้ร่วมกันทุกสาขา</span>
+          <button class="btn primary" id="addBtn" type="button">+ เพิ่มวัตถุดิบ</button>
+        </div>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>วัตถุดิบ</th><th class="r">คงเหลือ</th><th class="r">แจ้งเตือนเมื่อต่ำกว่า</th><th>สถานะ</th><th class="r">ใช้ใน (เมนู)</th><th style="width:240px"></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/js/common.js"></script>
+<script src="/js/stock.js"></script>
+</body>
+</html>
