@@ -5,13 +5,15 @@ const VALID_PAYMENT_METHODS = ["cash", "credit", "qr"];
 const VALID_ORDER_TYPES = ["dine_in", "takeaway"];
 
 exports.createOrder = async (req, res) => {
+  // ดึงตัวแปรออกจาก req.body (Object Destructuring) 
+  // เทียบเท่ากับ const branchId = req.body.branchId; 
   const { 
     branchId, 
     employeeId, 
     orderType, 
     tableNumber, 
     paymentMethod, 
-    discountAmount = 0, 
+    discountAmount = 0, // ถ้าไม่ได้ส่งส่วนลดมา ให้ค่าเริ่มต้นเป็น 0
     amountReceived, 
     items 
   } = req.body;
@@ -25,17 +27,21 @@ exports.createOrder = async (req, res) => {
   if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
 
   // BR-02: การรวมเมนูที่สั่งซ้ำ (Group Items)
+  // สร้าง Object ว่างๆ เพื่อเก็บเมนู โดยใช้ menuId เป็น Key
   const groupedItemsMap = {};
-  for (const item of items) {
+  for (const item of items) { // วนลูป (Loop) ดูรายการสินค้าทีละชิ้น
     if (!Number.isInteger(item.menuId) || item.menuId <= 0) return res.status(400).json({ error: "menuId ไม่ถูกต้อง" });
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) return res.status(400).json({ error: "quantity ต้องมากกว่า 0" });
     
+    // ถ้าเคยเจอเมนูนี้แล้ว ให้เอาจำนวน (quantity) บวกเพิ่มเข้าไป
     if (groupedItemsMap[item.menuId]) {
       groupedItemsMap[item.menuId].quantity += item.quantity;
     } else {
+      // ถ้าเพิ่งเคยเจอครั้งแรก ให้สร้างรายการใหม่
       groupedItemsMap[item.menuId] = { menuId: item.menuId, quantity: item.quantity };
     }
   }
+  // แปลง Object กลับมาเป็น Array เพื่อเอาไปใช้งานต่อ
   const finalItems = Object.values(groupedItemsMap);
 
   try {
@@ -77,9 +83,11 @@ exports.createOrder = async (req, res) => {
 
     // BR-01: ตรวจสอบสต็อกก่อนเปิด Transaction
     const missingIngredients = [];
+    
+    // Object.entries คือการวนลูปดึงทั้ง Key(id) และ Value(ing) ออกมาจาก Object
     for (const [id, ing] of Object.entries(requiredIngredients)) {
       if (ing.needed > ing.stock) {
-        missingIngredients.push(ing.name);
+        missingIngredients.push(ing.name); // ถ้าของไม่พอ ให้เอาชื่อวัตถุดิบใส่ลงใน Array
       }
     }
 
@@ -98,10 +106,10 @@ exports.createOrder = async (req, res) => {
     let lowStockWarnings = [];
 
     try {
-      // 3. บันทึกออเดอร์
+      // 3. บันทึกออเดอร์ (ไม่เก็บค่า total_amount และอื่นๆ ที่เป็น Derived Value แล้ว)
       orderId = await orderModel.createOrder(
         conn, branchId, employeeId, orderType, tableNumber, paymentMethod,
-        subtotalAmount, discountAmount, totalAmount, amountReceived, changeAmount
+        discountAmount, amountReceived
       );
 
       // 4. บันทึกไอเทมของออเดอร์
@@ -110,6 +118,7 @@ exports.createOrder = async (req, res) => {
       }
 
       // 5. ตัดสต็อกและบันทึกความเคลื่อนไหว
+      // วนลูปวัตถุดิบที่ต้องใช้ เพื่อตัดสต็อกทีละตัว
       for (const [id, ing] of Object.entries(requiredIngredients)) {
         await orderModel.updateStockAndRecordMovement(conn, ing.ingredientId, ing.needed, orderId);
         

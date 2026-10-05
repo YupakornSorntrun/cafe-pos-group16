@@ -70,7 +70,7 @@ CREATE TABLE orders (
 | `menu_items` | `menu_id` | `category_id` → `categories` | เมนูสินค้า |
 | `ingredients` | `ingredient_id` | — | วัตถุดิบ มี `stock_quantity` (cached) และ `low_stock_threshold` |
 | `menu_item_ingredients` | (`menu_id`, `ingredient_id`) | `menu_id` → `menu_items`, `ingredient_id` → `ingredients` | Junction table (M:N) |
-| `orders` | `order_id` | `branch_id`, `employee_id` | เพิ่มฟิลด์ให้ตรงกับ Use Case: `order_type`, `table_number`, `subtotal_amount`, `discount_amount`, `amount_received`, `change_amount`, `barista_status` |
+| `orders` | `order_id` | `branch_id`, `employee_id` | เพิ่มฟิลด์ให้ตรงกับ Use Case: `order_type`, `table_number`, `discount_amount`, `amount_received`, `barista_status` |
 | `order_items` | `order_item_id` | `order_id` → `orders`, `menu_id` → `menu_items` | แยกรายการสินค้าออกจาก orders |
 | `stock_movements` | `movement_id` | `ingredient_id`, `order_id` | บันทึกการเคลื่อนไหวสต็อก |
 | `receipts` | `receipt_id` | `order_id` → `orders` | ตารางใหม่ — เก็บประวัติการออกใบเสร็จ |
@@ -78,7 +78,7 @@ CREATE TABLE orders (
 ### สิ่งที่เพิ่ม/ปรับล่าสุดเพื่อเชื่อม Use Case:
 - เพิ่มตาราง **receipts**
 - เพิ่มฟิลด์เกี่ยวกับประเภทการทาน (dine_in/takeaway) และเลขโต๊ะ (`orders.order_type`, `orders.table_number`)
-- เพิ่มฟิลด์เกี่ยวกับการเงิน: ยอดก่อนลด, ส่วนลด, เงินที่รับ, เงินทอน (`subtotal_amount`, `discount_amount`, `amount_received`, `change_amount`)
+- เพิ่มฟิลด์เกี่ยวกับการเงิน: ส่วนลด, เงินที่รับ (`discount_amount`, `amount_received`)
 - เพิ่มคิวบาริสต้า (`orders.barista_status`)
 
 ---
@@ -102,7 +102,7 @@ CREATE TABLE orders (
 
 - **ใช้จัดการข้อมูล:** ออเดอร์และรายการสินค้าในออเดอร์ (ตาราง `orders` + `order_items`)
 - **Field สำคัญ:**
-  - orders: `order_id`, `branch_id`, `employee_id`, `payment_method`, `payment_status`, `total_amount`, `created_at`
+  - orders: `order_id`, `branch_id`, `employee_id`, `payment_method`, `payment_status`, `created_at`
   - order_items: `order_item_id`, `order_id`, `menu_id`, `quantity`, `unit_price`
 - **Table ที่เกี่ยวข้อง:** `orders`, `order_items`, `stock_movements`
 
@@ -142,7 +142,7 @@ ER Diagram (Week 7 Requirement)
 | Menu Item | `menu_items` | `menu_id`, `category_id`, `name`, `price` (ใน `menuModel.js`) |
 | Category | `categories` | `category_id`, `name` (JOIN ใน `menuModel.findAll`) |
 | Menu Item ↔ Ingredient | `menu_item_ingredients` | `menu_id`, `ingredient_id`, `quantity_used` (ใน `menuModel.findIngredientsByMenuId`) |
-| Order | `orders` | `order_id`, `branch_id`, `employee_id`, `payment_method`, `payment_status`, `total_amount`, `created_at` (ใน `orderModel.js`) |
+| Order | `orders` | `order_id`, `branch_id`, `employee_id`, `payment_method`, `payment_status`, `created_at` (ใน `orderModel.js`) |
 | Order Item | `order_items` | `order_item_id`, `order_id`, `menu_id`, `quantity`, `unit_price` (ใน `orderModel.js`) |
 | Stock Movement | `stock_movements` | `order_id` (ใน `orderModel.deleteOrder` — set NULL ก่อนลบ order) |
 

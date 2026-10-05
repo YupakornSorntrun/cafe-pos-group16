@@ -70,11 +70,8 @@ erDiagram
         varchar table_number "nullable"
         varchar payment_method
         enum payment_status
-        decimal subtotal_amount
         decimal discount_amount
-        decimal total_amount
         decimal amount_received
-        decimal change_amount
         enum barista_status "pending | preparing | completed"
         datetime created_at
     }

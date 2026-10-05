@@ -113,11 +113,8 @@ CREATE TABLE orders (
     table_number    VARCHAR(10)     NULL,
     payment_method  VARCHAR(20)     NOT NULL,
     payment_status  ENUM('unpaid', 'paid', 'voided') NOT NULL DEFAULT 'unpaid',
-    subtotal_amount DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     discount_amount DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
-    total_amount    DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     amount_received DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
-    change_amount   DECIMAL(10,2)   NOT NULL DEFAULT 0.00,
     barista_status  ENUM('pending', 'preparing', 'completed') NOT NULL DEFAULT 'pending',
     created_at      DATETIME        NOT NULL,
 

@@ -14,26 +14,22 @@ exports.createOrder = async (
   orderType,
   tableNumber,
   paymentMethod,
-  subtotalAmount,
   discountAmount,
-  totalAmount,
-  amountReceived,
-  changeAmount
+  amountReceived
 ) => {
+  // const [result] = ... คือการทำ Array Destructuring
+  // ปกติ mysql2 จะคืนค่ามา 2 อย่างคือ [ผลลัพธ์, ข้อมูลฟิลด์] เราแค่เอาตัวแรก (result) มาใช้
   const [result] = await conn.query(
-    `INSERT INTO orders (branch_id, employee_id, order_type, table_number, payment_method, payment_status, subtotal_amount, discount_amount, total_amount, amount_received, change_amount, barista_status, created_at)
-     VALUES (?, ?, ?, ?, ?, 'paid', ?, ?, ?, ?, ?, 'pending', NOW())`,
+    `INSERT INTO orders (branch_id, employee_id, order_type, table_number, payment_method, payment_status, discount_amount, amount_received, barista_status, created_at)
+     VALUES (?, ?, ?, ?, ?, 'paid', ?, ?, 'pending', NOW())`,
     [
       branchId,
       employeeId,
       orderType,
       tableNumber || null,
       paymentMethod,
-      subtotalAmount,
       discountAmount,
-      totalAmount,
-      amountReceived,
-      changeAmount,
+      amountReceived
     ]
   );
   return result.insertId;
@@ -87,13 +83,25 @@ exports.createReceipt = async (conn, orderId) => {
 };
 
 // ---------- READ ----------
+// คำนวณ subtotal_amount, total_amount และ change_amount สดๆ ผ่านการ JOIN กับ order_items (ป้องการ update anomaly ตามหัวข้อ 3.2)
+// COALESCE(..., 0) คือฟังก์ชันของ SQL เอาไว้ดักว่า "ถ้าค่าเป็น NULL ให้เปลี่ยนเป็นเลข 0 แทน" (กันพังเวลารายการสินค้าว่างเปล่า)
+const ORDER_SELECT_QUERY = `
+  SELECT 
+    o.*, 
+    COALESCE(SUM(oi.quantity * oi.unit_price), 0) AS subtotal_amount,
+    (COALESCE(SUM(oi.quantity * oi.unit_price), 0) - o.discount_amount) AS total_amount,
+    (o.amount_received - (COALESCE(SUM(oi.quantity * oi.unit_price), 0) - o.discount_amount)) AS change_amount
+  FROM orders o 
+  LEFT JOIN order_items oi ON o.order_id = oi.order_id 
+`;
+
 exports.findAll = async () => {
-  const [rows] = await db.query(`SELECT * FROM orders`);
+  const [rows] = await db.query(ORDER_SELECT_QUERY + `GROUP BY o.order_id`);
   return rows;
 };
 
 exports.findById = async (orderId) => {
-  const [rows] = await db.query(`SELECT * FROM orders WHERE order_id = ?`, [orderId]);
+  const [rows] = await db.query(ORDER_SELECT_QUERY + `WHERE o.order_id = ? GROUP BY o.order_id`, [orderId]);
   return rows[0] || null;
 };
 
