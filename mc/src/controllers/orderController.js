@@ -173,6 +173,7 @@ exports.getAllOrders = async (req, res) => {
   }
 
   // แคชเชียร์เห็นเฉพาะออเดอร์ของวันนี้ (เวลาไทย) ในสาขาตัวเอง
+  // เจ้าของกรองตามสาขา/วันที่ที่ส่งมา | แคชเชียร์ถูกบังคับเป็น "สาขาตัวเอง + วันนี้" เสมอ (กำหนดที่ server ไม่เชื่อค่าจากหน้าเว็บ)
   const filters = { branchId: branchId > 0 ? branchId : undefined, from, to };
   if (req.user.role === "cashier") {
     const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bangkok" });
@@ -214,6 +215,7 @@ exports.deleteOrder = async (req, res) => {
   if (Number.isNaN(orderId) || orderId <= 0) {
     return res.status(400).json({ error: "ID ของออเดอร์ไม่ถูกต้อง" });
   }
+  // isCashier: ใช้แยกกติกา — แคชเชียร์ถูกจำกัดสาขาและสถานะออเดอร์ที่ยกเลิกได้
   const isCashier = req.user.role === "cashier";
 
   try {
@@ -234,6 +236,7 @@ exports.deleteOrder = async (req, res) => {
 
     const conn = await orderModel.getConnection();
     await conn.beginTransaction();
+    // restored = ครั้งนี้คืนวัตถุดิบเข้าสต็อกหรือไม่ (คืนเฉพาะออเดอร์ที่บาริสต้ายังไม่เริ่มทำ)
     let restored = false;
     try {
       // ล็อกแถวแล้วตรวจสถานะซ้ำ กัน race กับบาริสต้า/การยกเลิกซ้ำ

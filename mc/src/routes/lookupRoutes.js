@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+// route ข้อมูลอ้างอิงที่หน้าเว็บใช้ทำ dropdown (ผู้ที่ล็อกอินแล้วเรียกได้)
 const db = require("../config/db");
 
 // GET /api/branches — เจ้าของเห็นทุกสาขา, แคชเชียร์เห็นเฉพาะสาขาตัวเอง

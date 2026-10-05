@@ -1,5 +1,14 @@
 // Shared helpers: API, shell (sidebar + topbar + branch selector), toast, modal, receipt
+// =====================================================================
+// common.js — ตัวช่วยที่ "ทุกหน้า" ใช้ร่วมกัน (โหลดก่อนไฟล์ของแต่ละหน้าเสมอ)
+//   - api()      เรียก backend พร้อมแนบ token ล็อกอิน
+//   - Shell      วาดแถบเมนูซ้าย/แถบบน, ตรวจว่าล็อกอินและมีสิทธิ์เข้าหน้านั้นไหม, จัดการตัวเลือกสาขา
+//   - toast / modal / confirmBox   ข้อความเตือนและหน้าต่างป๊อปอัป
+//   - showReceipt()  แสดงและพิมพ์ใบเสร็จ
+// ทุกอย่างถูกส่งออกทางตัวแปร App ท้ายไฟล์ เช่น App.api(...), App.toast(...)
+// =====================================================================
 (function () {
+  // ไอคอนทั้งหมดเป็น SVG ฝังในโค้ด (เส้นเรียบ ๆ) จึงไม่ต้องโหลดไฟล์รูปเพิ่ม
   const ICONS = {
     logo: '<svg viewBox="0 0 24 24"><path d="M4 8h12v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8z"/><path d="M16 10h2a2 2 0 0 1 0 4h-2"/><path d="M8 3v2M12 3v2"/></svg>',
     pos: '<svg viewBox="0 0 24 24"><path d="M6 7h12l1 13H5L6 7z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>',
@@ -21,15 +30,20 @@
   const HOME = { cashier: "/index.html", owner: "/report.html" };
   const ROLE_LABEL = { cashier: "แคชเชียร์", owner: "เจ้าของร้าน" };
 
+  // ห่อ localStorage ด้วย try/catch เพราะบางเบราว์เซอร์ (เช่นโหมดส่วนตัว) ใช้ไม่ได้ จะได้ไม่ทำให้หน้าเว็บพัง
+  // ใช้เก็บ token ล็อกอิน (cafe.token) และสาขาที่เลือกล่าสุด (cafe.branchId)
   const store = {
     get(k) { try { return localStorage.getItem(k); } catch { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
     remove(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } },
   };
 
+  // esc(): แปลงอักขระพิเศษ < > & " ' เป็น HTML entity ก่อนนำข้อความไปใส่ใน HTML
+  // เพื่อกันการฝังสคริปต์ (XSS) — ข้อความจากฐานข้อมูลหรือที่ผู้ใช้พิมพ์ต้องผ่านฟังก์ชันนี้ทุกครั้ง
   const esc = (s) =>
     String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+  // baht(1234.5) -> "฿1,234.50"
   const baht = (n) =>
     "฿" + Number(n || 0).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -42,14 +56,21 @@
   // "YYYY-MM-DD" ตามวันที่ในเวลาไทย
   const ymdThai = (d) => new Date(d).toLocaleDateString("en-CA", { timeZone: TZ });
 
+  // api(): ตัวกลางเรียก backend แทน fetch ตรง ๆ
+  //   api("/api/menu?branchId=1")                     -> GET
+  //   api("/api/orders", { json: {...} })             -> POST พร้อมส่ง JSON
+  //   api("/api/menu/3", { method: "PUT", json: {...} })
+  // ถ้า server ตอบ error จะ throw Error ที่มีข้อความภาษาไทยให้เอาไปแสดงต่อได้ (toast(e.message))
   async function api(path, opts = {}) {
     const init = { ...opts };
+    // ถ้าส่ง { json: ... } มา -> แปลงเป็น JSON ใน body และตั้ง method เป็น POST ให้อัตโนมัติ
     if (init.json !== undefined) {
       init.method = init.method || "POST";
       init.headers = { "Content-Type": "application/json", ...(init.headers || {}) };
       init.body = JSON.stringify(init.json);
       delete init.json;
     }
+    // แนบ JWT ไปกับทุกคำขอ เพื่อให้ server รู้ว่าใครเรียกและมีสิทธิ์ทำสิ่งนั้นไหม
     const token = store.get("cafe.token");
     if (token) init.headers = { ...(init.headers || {}), Authorization: `Bearer ${token}` };
     let res;
@@ -59,6 +80,8 @@
       throw new Error("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
     }
     const data = await res.json().catch(() => ({}));
+    // 401 = ยังไม่ล็อกอิน หรือ token หมดอายุ -> ล้าง token แล้วพาไปหน้า login
+    // (ยกเว้นตอนกดล็อกอินเอง ซึ่งต้องให้แสดงข้อความ "รหัสผ่านไม่ถูกต้อง" แทน)
     if (res.status === 401 && !path.startsWith("/api/auth/login")) {
       store.remove("cafe.token");
       location.href = "/login.html";
@@ -71,6 +94,7 @@
     return data;
   }
 
+  // toast(): กล่องข้อความเล็ก ๆ มุมขวาล่าง หายไปเอง (kind = "error" สีแดง, "warn" สีเหลือง)
   function toast(msg, kind = "") {
     let box = document.querySelector(".toasts");
     if (!box) {
@@ -85,6 +109,8 @@
     setTimeout(() => el.remove(), kind === "error" ? 5000 : 3200);
   }
 
+  // modal(): หน้าต่างป๊อปอัป ปิดได้ด้วยปุ่ม x, กด Esc หรือคลิกพื้นหลัง
+  // คืนค่า { el, close } เพื่อให้ผู้เรียกไปผูกปุ่มข้างใน (เช่น ปุ่มบันทึก) เอง
   // modal({title, body(html), footer(html)}) → { el, close }
   function modal({ title, body, footer, onClose }) {
     const ov = document.createElement("div");
@@ -101,6 +127,8 @@
     return { el: ov, close };
   }
 
+  // confirmBox(): หน้าต่างถามยืนยัน คืน Promise<true/false>
+  // ใช้แบบ: if (await confirmBox({ title, message })) { ...ทำต่อ... }
   function confirmBox({ title, message, okText = "ยืนยัน", danger = false }) {
     return new Promise((resolve) => {
       const m = modal({
@@ -116,6 +144,10 @@
 
   // ---------- Shell ----------
   // Shell.init({ page, title, search, allBranches, onBranch(branchId|null), onSearch(text) })
+  // Shell = "โครง" ของทุกหน้า หน้าไหนก็เรียก Shell.init({...}) เป็นอย่างแรก มันจะ:
+  //   1) ตรวจว่าล็อกอินอยู่ไหม (ไม่อยู่ -> ไปหน้า login)   2) ตรวจว่าบทบาทนี้เข้าหน้านี้ได้ไหม
+  //   3) วาดแถบเมนูซ้ายเฉพาะเมนูที่บทบาทนี้ใช้ได้   4) วาดแถบบน (ชื่อหน้า ค้นหา ชื่อผู้ใช้ สาขา)
+  //   5) โหลดรายชื่อสาขา แล้วเรียก onBranch(สาขา) ทุกครั้งที่เปลี่ยนสาขา เพื่อให้หน้านั้นโหลดข้อมูลใหม่
   const Shell = {
     branches: [],
     branchId: null,
@@ -171,6 +203,7 @@
         return;
       }
 
+      // ตัวเลือก "ทุกสาขา" มีให้เฉพาะเจ้าของ และเฉพาะหน้าที่เปิดใช้ (หน้ารายงาน)
       const canAll = allBranches && u.role === "owner";
       sel.innerHTML =
         (canAll ? '<option value="all">ทุกสาขา</option>' : "") +
@@ -181,6 +214,7 @@
       sel.value = saved && valid(saved) ? saved : (canAll ? "all" : String(Shell.branches[0].branch_id));
       if (u.role === "cashier") { sel.value = String(u.branchId); sel.disabled = true; } // แคชเชียร์ผูกกับสาขาตัวเอง
 
+      // apply(): อ่านสาขาที่เลือกอยู่ -> จำไว้ใน localStorage -> แจ้งหน้าที่เรียกใช้ (onBranch) ให้โหลดข้อมูลใหม่
       const apply = () => {
         if (u.role !== "cashier") store.set("cafe.branchId", sel.value);
         Shell.branchId = sel.value === "all" ? null : Number(sel.value);
@@ -198,6 +232,8 @@
 
   // ---------- Image helpers ----------
   const noImage = `<div class="noimg">${ICONS.cup}</div>`;
+  // imgTag(): ถ้ามีรูปให้คืนแท็ก <img> ไม่มีก็คืนไอคอนแก้วแทน
+  // data-fallback ใช้คู่กับตัวดักเหตุการณ์ error ด้านล่าง (กรณีมีลิงก์รูปแต่โหลดไม่ขึ้น)
   function imgTag(url, alt) {
     if (!url) return noImage;
     return `<img src="${esc(url)}" alt="${esc(alt)}" loading="lazy" data-fallback>`;
@@ -216,6 +252,8 @@
   const PAY_LABEL = { cash: "เงินสด", credit: "บัตรเครดิต", qr: "QR Code" };
   const TYPE_LABEL = { dine_in: "ทานที่ร้าน", takeaway: "กลับบ้าน" };
 
+  // receiptHtml(): สร้าง HTML ของใบเสร็จจากข้อมูลออเดอร์ (ได้จาก GET /api/orders/:id)
+  // ยอดรวม/ส่วนลด/ยอดสุทธิ/เงินทอน ใช้ค่าที่ server คำนวณมาให้ ไม่คำนวณซ้ำที่หน้าเว็บ
   function receiptHtml(o) {
     const b = o.branch || {};
     return `<div class="receipt" id="receiptPaper">
@@ -245,6 +283,8 @@
     </div>`;
   }
 
+  // showReceipt(): โหลดออเดอร์ตามเลข แล้วเปิดใบเสร็จในหน้าต่างป๊อปอัป
+  // ปุ่มพิมพ์ใช้ window.print() — CSS (@media print) จะซ่อนทุกอย่างยกเว้นใบเสร็จ
   async function showReceipt(orderId, { title = "ใบเสร็จรับเงิน" } = {}) {
     const order = await api(`/api/orders/${orderId}`);
     const m = modal({
@@ -261,5 +301,6 @@
     return m;
   }
 
+  // ส่งออกฟังก์ชันทั้งหมดทางตัวแปร App เพื่อให้ไฟล์ของแต่ละหน้า (pos.js, menu.js ฯลฯ) เรียกใช้ได้
   window.App = { queueLabel, BARISTA_LABEL, ymdThai, UNIT_LABEL, ROLE_LABEL, HOME, api, toast, modal, confirmBox, Shell, esc, baht, fmtDateTime, imgTag, showReceipt, PAY_LABEL, TYPE_LABEL, ICONS, store };
 })();

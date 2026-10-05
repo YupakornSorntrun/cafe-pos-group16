@@ -2,6 +2,7 @@ require("dotenv").config();
 
 const mysql = require("mysql2/promise");
 
+// pool = กลุ่มการเชื่อมต่อฐานข้อมูลที่ใช้ซ้ำได้ (ค่าเชื่อมต่ออ่านจากไฟล์ .env)
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT || 3306,

@@ -58,6 +58,7 @@ const parseRecipe = (raw) => {
   return { recipe: raw.map((r) => ({ ingredientId: r.ingredientId, quantityUsed: r.quantityUsed })) };
 };
 
+// recipeErrorResponse(): แปลง error ของฐานข้อมูลเป็นข้อความที่อ่านรู้เรื่อง (วัตถุดิบที่อ้างไม่มีอยู่จริง -> 400)
 const recipeErrorResponse = (error, res) => {
   if (error.code === "ER_NO_REFERENCED_ROW_2") return res.status(400).json({ error: "ไม่พบวัตถุดิบที่เลือก" });
   console.error(error);

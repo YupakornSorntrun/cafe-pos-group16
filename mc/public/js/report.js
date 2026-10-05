@@ -1,5 +1,7 @@
 // หน้ารายงานยอดขาย (Summary Report) — FR-07
 // ข้อมูลมาจาก GET /api/orders (wk9) แล้วสรุปฝั่ง client; endpoint รายงานเฉพาะ (/api/reports/sales) ไว้ทำใน wk13
+// ลำดับ: เลือกสาขา/ช่วงวันที่ -> load() ดึงออเดอร์จาก server -> render() สรุปตัวเลขที่ฝั่งหน้าเว็บ
+// ยอดขายนับเฉพาะออเดอร์ที่ payment_status = "paid" (ออเดอร์ที่ยกเลิก = "voided" ไม่นับ)
 (function () {
   const { api, toast, Shell, esc, baht, fmtDateTime, confirmBox, showReceipt, PAY_LABEL, TYPE_LABEL } = App;
   const $ = (id) => document.getElementById(id);
@@ -8,6 +10,7 @@
 
   const ymd = App.ymdThai;
 
+  // setPreset(): ปุ่มลัดช่วงเวลา (วันนี้ / 7 วันล่าสุด / เดือนนี้) นับตามวันที่ในเวลาไทย
   function setPreset(p) {
     const now = new Date();
     let from = ymd(now);
@@ -18,6 +21,7 @@
     [...$("presets").children].forEach((b) => b.classList.toggle("active", b.dataset.p === p));
   }
 
+  // load(): ตรวจช่วงวันที่ -> ขอออเดอร์ตามสาขา/วันที่ -> วาดรายงานใหม่
   async function load() {
     const from = $("from").value, to = $("to").value;
     $("rangeErr").textContent = from && to && from > to ? "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด" : "";
@@ -40,6 +44,7 @@
     render();
   }
 
+  // sumBy(): จัดกลุ่มออเดอร์ตาม key ที่กำหนด (วัน/วิธีจ่าย/สาขา) แล้วนับจำนวน+รวมยอด -> Map
   const sumBy = (rows, keyFn) => {
     const m = new Map();
     for (const o of rows) {
@@ -52,6 +57,7 @@
   };
   const empty = (cols, text = "ไม่มีข้อมูลในช่วงเวลานี้") => `<tr><td colspan="${cols}" class="hint" style="text-align:center;padding:24px">${text}</td></tr>`;
 
+  // render(): คำนวณ KPI และตารางสรุปทั้งหมดจาก state.orders แล้ววาดลงหน้า
   function render() {
     const paid = state.orders.filter((o) => o.payment_status === "paid");
     const voided = state.orders.filter((o) => o.payment_status === "voided");
@@ -107,6 +113,7 @@
       : empty(8);
   }
 
+  // ผูกเหตุการณ์: ปุ่มลัด/เปลี่ยนวันที่ -> โหลดใหม่, สลับรายวัน/รายเดือน -> วาดใหม่, ปุ่มใบเสร็จ/ยกเลิก ในตารางออเดอร์
   // ---------- events ----------
   $("presets").addEventListener("click", (e) => {
     const b = e.target.closest("[data-p]");

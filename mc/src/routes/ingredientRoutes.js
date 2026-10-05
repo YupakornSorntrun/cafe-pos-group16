@@ -6,9 +6,11 @@ const { authorizeRoles } = require("../middlewares/auth");
 // วัตถุดิบใช้ร่วมกันทุกสาขา (ตาม schema) — จัดการได้เฉพาะเจ้าของ
 router.use(authorizeRoles("owner"));
 
+// หน่วยที่ schema อนุญาต: g (กรัม), ml (มิลลิลิตร), pcs (ชิ้น)
 const UNITS = ["g", "ml", "pcs"];
 const num = (v) => (typeof v === "number" ? v : NaN);
 
+// validate(): ตรวจข้อมูลที่ส่งมา คืนข้อความ error หรือ null ถ้าผ่าน (withStock = ตรวจจำนวนคงเหลือด้วย)
 const validate = (b, { withStock }) => {
   if (!b.name || typeof b.name !== "string" || !b.name.trim()) return "ต้องระบุชื่อวัตถุดิบ";
   if (b.name.trim().length > 100) return "ชื่อวัตถุดิบยาวเกิน 100 ตัวอักษร";
@@ -42,6 +44,7 @@ router.post("/", async (req, res) => {
   if (msg) return res.status(400).json({ error: msg });
   const { name, unit, stockQuantity, lowStockThreshold } = req.body;
 
+  // เปิด transaction: ต้องบันทึก "ตัววัตถุดิบ" และ "ประวัติเติมสต็อก" พร้อมกัน ถ้าพลาดข้อใดข้อหนึ่งให้ยกเลิกทั้งคู่
   const conn = await db.getConnection();
   try {
     await conn.beginTransaction();

@@ -4,6 +4,8 @@ const path = require("path");
 const crypto = require("crypto");
 const router = express.Router();
 
+// รับไฟล์รูปแบบ "raw body" (หน้าเว็บส่งไฟล์ตรง ๆ พร้อม Content-Type: image/png ฯลฯ) จึงไม่ต้องใช้ไลบรารีเพิ่ม
+// ตั้งชื่อไฟล์ใหม่เองเสมอ (เวลา + เลขสุ่ม) ไม่ใช้ชื่อจากผู้ใช้ เพื่อกันชื่อชนกันและกันการเขียนทับไฟล์อื่น
 const UPLOAD_DIR = path.join(__dirname, "..", "..", "public", "uploads");
 const EXT_BY_TYPE = {
   "image/jpeg": ".jpg",

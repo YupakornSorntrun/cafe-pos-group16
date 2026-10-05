@@ -1,10 +1,12 @@
 // หน้าจัดการเมนู — CRUD + อัปโหลดรูปสินค้า (NFR-05)
+// หน้าจัดการเมนู (เจ้าของ): ตารางเมนูของสาขาที่เลือก + ฟอร์มเพิ่ม/แก้ไข (ชื่อ หมวด ราคา สูตรวัตถุดิบ รูป)
 (function () {
   const { api, toast, Shell, esc, baht, imgTag, modal, confirmBox } = App;
   const $ = (id) => document.getElementById(id);
 
   const state = { menus: [], categories: [], activeCat: "all", search: "" };
 
+  // load(): โหลดเมนูของสาขาและรายการหมวดหมู่พร้อมกัน (Promise.all) แล้ววาดตาราง
   async function load() {
     $("rows").innerHTML = '<tr><td colspan="6" class="hint" style="text-align:center;padding:32px">กำลังโหลด...</td></tr>';
     try {
@@ -18,6 +20,7 @@
     render();
   }
 
+  // render(): วาดแท็บหมวดหมู่และตารางเมนู (กรองตามหมวด/คำค้น) — ป้าย "ไม่มีสูตร" เตือนว่าเมนูนั้นขายแล้วไม่ตัดสต็อก
   function render() {
     const usedCats = state.categories.filter((c) => state.menus.some((m) => m.category_id === c.category_id));
     if (state.activeCat !== "all" && !usedCats.some((c) => String(c.category_id) === state.activeCat)) state.activeCat = "all";
@@ -40,6 +43,8 @@
   }
 
   // ---------- add / edit form ----------
+  // openForm(): เปิดฟอร์มเพิ่มเมนู (menu = null) หรือแก้ไข (ส่งเมนูเดิมมา)
+  // ตัวแปรในฟังก์ชันที่ต้องจำ: recipe = สูตรที่กำลังแก้, imageUrl = รูปเดิม, pendingFile = รูปใหม่ที่เลือกแต่ยังไม่อัปโหลด
   async function openForm(menu) {
     const editing = !!menu;
     // วัตถุดิบทั้งหมด + สูตรเดิมของเมนู (ถ้าแก้ไข)
@@ -92,6 +97,7 @@
     const el = m.el;
     const $$ = (id) => el.querySelector("#" + id);
 
+    // renderPreview(): แสดงตัวอย่างรูป (รูปใหม่ที่เลือก > รูปเดิม > ไอคอนว่าง)
     const renderPreview = () => {
       $$("preview").innerHTML = pendingFile ? `<img src="${previewUrl}" alt="">` : imgTag(imageUrl, "");
       $$("rmImg").style.display = pendingFile || imageUrl ? "" : "none";
@@ -100,6 +106,7 @@
 
     // ---------- recipe rows ----------
     const unitOf = (id) => { const i = allIngredients.find((x) => x.ingredient_id === id); return i ? App.UNIT_LABEL[i.unit] : ""; };
+    // renderRecipe(): วาดแถวสูตรวัตถุดิบ (เลือกวัตถุดิบ + ปริมาณ + หน่วย) จากอาร์เรย์ recipe
     const renderRecipe = () => {
       $$("recipeRows").innerHTML = recipe.map((r, idx) => `<div class="recipe-row" data-idx="${idx}">
         <select data-k="ing"><option value="">เลือกวัตถุดิบ...</option>${allIngredients.map((i) => `<option value="${i.ingredient_id}" ${i.ingredient_id === r.ingredientId ? "selected" : ""}>${esc(i.name)}</option>`).join("")}</select>
@@ -120,6 +127,7 @@
     $$("recipeRows").addEventListener("input", (e) => {
       if (e.target.dataset.k === "qty") recipe[Number(e.target.closest(".recipe-row").dataset.idx)].quantityUsed = parseFloat(e.target.value) || "";
     });
+    // recipeError(): ตรวจสูตร — เลือกวัตถุดิบครบทุกแถว, ปริมาณ > 0, ห้ามเลือกวัตถุดิบซ้ำ (คืนข้อความ error หรือ "" ถ้าผ่าน)
     const recipeError = () => {
       const ids = new Set();
       for (const r of recipe) {
@@ -147,6 +155,7 @@
       renderPreview();
     });
 
+    // validate(): ตรวจชื่อ ราคา สูตร แล้วแสดง error ใต้ช่อง คืน true เมื่อผ่านทั้งหมด
     const validate = () => {
       const name = $$("fName").value.trim();
       const price = parseFloat($$("fPrice").value);
@@ -163,6 +172,8 @@
     el.querySelector("[data-cancel]").onclick = m.close;
 
     const saveBtn = el.querySelector("[data-save]");
+    // save(): ตรวจข้อมูล -> (ถ้ามีรูปใหม่) อัปโหลดรูปก่อนเพื่อได้ลิงก์ -> ส่งข้อมูลเมนูไป POST (เพิ่ม) หรือ PUT (แก้)
+    // ลำดับนี้ทำให้เมนูอ้างลิงก์รูปที่ upload สำเร็จแล้วเท่านั้น
     const save = async () => {
       if (!validate()) return;
       saveBtn.disabled = true; saveBtn.textContent = "กำลังบันทึก...";
@@ -195,6 +206,7 @@
     $$("fName").focus();
   }
 
+  // ปุ่มเพิ่มเมนู / กรองหมวด / แก้ไข / ลบ (ลบต้องผ่านหน้าต่างยืนยันก่อน)
   // ---------- events ----------
   $("addBtn").addEventListener("click", () => openForm(null));
   $("cats").addEventListener("click", (e) => {

@@ -5,6 +5,8 @@ const { verifyPassword, generateToken } = require("../auth-helpers");
 const { authenticateToken } = require("../middlewares/auth");
 
 // หน้าเว็บให้เข้าได้เฉพาะ owner / cashier
+// ลำดับตรวจตอนล็อกอิน: กรอกครบไหม -> ล็อกอินผิดเกินกำหนดไหม -> หาผู้ใช้ -> ตรวจรหัสผ่าน -> ตรวจว่าบทบาทใช้หน้าเว็บได้ -> ออก token
+// ข้อความ error ตอนไม่พบผู้ใช้กับรหัสผิดเหมือนกัน เพื่อไม่บอกใบ้ว่าชื่อผู้ใช้นั้นมีอยู่จริง
 const WEB_ROLES = ["owner", "cashier"];
 
 // กัน brute force แบบง่าย: ผิดเกิน 5 ครั้ง/10 นาที ต่อ (ip + username)
@@ -20,6 +22,7 @@ const fail = (key) => {
   else rec.count += 1;
 };
 
+// POST /api/auth/login  body: { username, password }  ->  { token, user }
 router.post("/login", async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== "string" || typeof password !== "string" || !username.trim() || !password) {
@@ -50,6 +53,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
+// GET /api/auth/me — หน้าเว็บเรียกตอนเปิดหน้า เพื่อรู้ว่าใครล็อกอินอยู่ (ใช้ตรวจ token ด้วย)
 router.get("/me", authenticateToken, (req, res) => {
   const { id, name, role, branchId } = req.user;
   res.json({ id, name, role, branchId });

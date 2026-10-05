@@ -1,9 +1,12 @@
 // หน้าสต็อกวัตถุดิบ (เจ้าของ) — FR-04/05: เพิ่ม/แก้ไข/เติมสต็อก/ลบ + แจ้งเตือนใกล้หมด
+// หน้าสต็อกวัตถุดิบ (เจ้าของ): ตารางวัตถุดิบ + เพิ่ม/แก้ไข/เติมสต็อก/ลบ
+// วัตถุดิบเป็นของกลางทุกสาขา (ตาม schema) ตัวเลือกสาขาจึงไม่มีผลกับตารางนี้
 (function () {
   const { api, toast, esc, modal, confirmBox, Shell, UNIT_LABEL } = App;
   const $ = (id) => document.getElementById(id);
   const state = { items: [], filter: "all" };
   const fmt = (n) => Number(n).toLocaleString("th-TH", { maximumFractionDigits: 2 });
+  // isLow(): "ใกล้หมด" = คงเหลือไม่เกินเกณฑ์แจ้งเตือน (low_stock_threshold) ที่ตั้งไว้
   const isLow = (i) => Number(i.stock_quantity) <= Number(i.low_stock_threshold);
 
   async function load() {
@@ -11,6 +14,7 @@
     render();
   }
 
+  // render(): วาดตาราง (กรอง "ทั้งหมด"/"ใกล้หมด") และอัปเดตจำนวนบนแท็บ "ใกล้หมด"
   function render() {
     const lowCount = state.items.filter(isLow).length;
     $("filters").children[1].textContent = `ใกล้หมด (${lowCount})`;
@@ -29,6 +33,7 @@
 
   function setErr(el, errEl, msg) { errEl.textContent = msg || ""; el.classList.toggle("invalid", !!msg); }
 
+  // openForm(): ฟอร์มเพิ่ม (item = null) หรือแก้ไขวัตถุดิบ — ตอนเพิ่มกำหนดจำนวนเริ่มต้นได้ ตอนแก้ไขไม่แตะจำนวน (ใช้ "เติมสต็อก" แทน)
   function openForm(item) {
     const editing = !!item;
     const m = modal({
@@ -72,6 +77,7 @@
     q("fName").focus();
   }
 
+  // openRestock(): เติมสต็อก (บวกเพิ่ม) — server บันทึกประวัติลง stock_movements ด้วย
   function openRestock(item) {
     const m = modal({
       title: `เติมสต็อก: ${item.name}`,

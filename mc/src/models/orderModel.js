@@ -126,6 +126,7 @@ exports.findAll = async ({ branchId, from, to } = {}) => {
 };
 
 // ออเดอร์ + รายการสินค้า (มีชื่อเมนู) + เลขที่ใบเสร็จ สำหรับแสดงใบเสร็จ
+// findDetail(): รวมข้อมูลที่ใบเสร็จต้องใช้จากหลายตารางเป็นก้อนเดียว (ออเดอร์ + รายการ + ใบเสร็จ + สาขา + ชื่อแคชเชียร์)
 exports.findDetail = async (orderId) => {
   const order = await exports.findById(orderId);
   if (!order) return null;

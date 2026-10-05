@@ -18,6 +18,8 @@ const setRecipe = async (conn, menuId, recipe) => {
   }
 };
 
+// inTransaction(fn): ช่วยครอบงานหลายคำสั่งให้เป็น "ทำสำเร็จทั้งหมดหรือไม่ทำเลย"
+// รัน fn(conn) แล้ว COMMIT; ถ้า error ใด ๆ จะ ROLLBACK และ throw ต่อ (ใช้กับเมนู+สูตรที่ต้องบันทึกคู่กัน)
 const inTransaction = async (fn) => {
   const conn = await db.getConnection();
   await conn.beginTransaction();
