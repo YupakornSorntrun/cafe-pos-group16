@@ -292,12 +292,16 @@
       body: receiptHtml(order),
       footer: '<button class="btn" data-close>ปิด</button><button class="btn primary" data-print>พิมพ์ใบเสร็จ</button>',
     });
+    // ใส่ป้ายไว้ให้ CSS ตอนพิมพ์รู้ว่าหน้าต่างไหนคือใบเสร็จ (หน้าต่างอื่นที่เปิดค้างอยู่ เช่น "ออเดอร์วันนี้" จะไม่ถูกพิมพ์)
+    m.el.classList.add("print-target");
     m.el.querySelector("[data-close]").onclick = m.close;
-    m.el.querySelector("[data-print]").onclick = () => {
+    // พิมพ์ใบเสร็จ: เปิดโหมด print-receipt (CSS ซ่อนทุกอย่างยกเว้นใบเสร็จ) แล้วสั่งพิมพ์
+    const printNow = () => {
       document.body.classList.add("print-receipt");
       window.addEventListener("afterprint", () => document.body.classList.remove("print-receipt"), { once: true });
       window.print();
     };
+    m.el.querySelector("[data-print]").onclick = printNow;
     return m;
   }
 

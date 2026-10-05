@@ -268,10 +268,28 @@ tr.is-voided td.strike { text-decoration: line-through; }
   .rail, .topbar, .filters, .actions, .toasts, .toolbar { display: none !important; }
   .app { display: block; height: auto; }
   .page { overflow: visible; background: #fff; padding: 0; }
-  body.print-receipt * { visibility: hidden; }
-  body.print-receipt .receipt, body.print-receipt .receipt * { visibility: visible; }
-  body.print-receipt .receipt { position: absolute; left: 0; top: 0; border: 0; max-width: 80mm; width: 80mm; }
+  /* ตอนพิมพ์ใบเสร็จ: ซ่อนทั้งหน้าจริง ๆ (display:none ไม่เหลือที่ว่างให้เกิดหน้าเปล่า) แล้วเหลือแต่ใบเสร็จ */
+  body.print-receipt .app, body.print-receipt .modal-head, body.print-receipt .modal-foot { display: none !important; }
+  body.print-receipt .overlay:not(.print-target) { display: none !important; }
+  body.print-receipt .overlay { position: static; display: block; background: none; padding: 0; }
+  body.print-receipt .modal { box-shadow: none; max-width: none; max-height: none; overflow: visible; border-radius: 0; }
+  body.print-receipt .modal-body { padding: 0; }
+  /* เครื่องพิมพ์ใบเสร็จกระดาษ 58 mm (พื้นที่พิมพ์จริงประมาณ 48 mm) — ใช้ "named page" เพื่อไม่กระทบการพิมพ์รายงาน */
+  body.print-receipt .receipt {
+    page: receipt;
+    margin: 0; border: 0; padding: 2mm 1mm;
+    width: 48mm; max-width: 48mm; font-size: 11px;
+  }
+  /* เครื่องพิมพ์ความร้อนพิมพ์ได้แค่ขาว/ดำ: ใช้สีดำล้วน ตัวหนา และฟอนต์ไทยที่อ่านชัด (สีเทา/เส้นบางจะพิมพ์ออกมาเลือน) */
+  body.print-receipt .receipt, body.print-receipt .receipt * { color: #000 !important; font-family: "Leelawadee UI", Tahoma, sans-serif; font-weight: 600; }
+  body.print-receipt .receipt { font-size: 12px; }
+  body.print-receipt .receipt hr { border-top: 1px solid #000; }
+  body.print-receipt .receipt .shop { font-size: 14px; }
+  body.print-receipt .receipt .queue { font-size: 30px; }
+  body.print-receipt .receipt .rw.b { font-size: 13px; }
 }
+
+@page receipt { size: 58mm auto; margin: 0; }
 
 @media (max-width: 1100px) {
   .order-panel { width: 320px; }
