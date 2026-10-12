@@ -26,6 +26,9 @@ exports.createOrder = async (req, res) => {
   if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) return res.status(400).json({ error: "paymentMethod ไม่ถูกต้อง" });
   if (amountReceived == null || amountReceived < 0) return res.status(400).json({ error: "ต้องระบุ amountReceived" });
   if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
+  if (typeof discountAmount !== "number" || !Number.isFinite(discountAmount) || discountAmount < 0) {
+    return res.status(400).json({ error: "ส่วนลดต้องเป็นตัวเลขและไม่ติดลบ" });
+  }
 
   // BR-02: การรวมเมนูที่สั่งซ้ำ (Group Items)
   // สร้าง Object ว่างๆ เพื่อเก็บเมนู โดยใช้ menuId เป็น Key
@@ -82,6 +85,9 @@ exports.createOrder = async (req, res) => {
 
     // ยอดรวมคำนวณใน class Order (calculateTotal) แทนการบวกเองใน controller
     const subtotalAmount = order.calculateTotal();
+    if (discountAmount > subtotalAmount) {
+      return res.status(400).json({ error: "ส่วนลดต้องไม่เกินยอดรวม" });
+    }
     const totalAmount = subtotalAmount - discountAmount;
     if (amountReceived < totalAmount) {
       return res.status(400).json({ error: "จำนวนเงินที่รับมาไม่พอ" });
