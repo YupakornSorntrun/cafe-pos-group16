@@ -163,14 +163,6 @@ exports.findById = async (orderId) => {
   return rows[0] || null;
 };
 
-exports.updatePaymentStatus = async (orderId, paymentStatus) => {
-  const [result] = await db.query(
-    `UPDATE orders SET payment_status = ? WHERE order_id = ?`,
-    [paymentStatus, orderId]
-  );
-  return result.affectedRows;
-};
-
 // ดึงรายการสั่งซื้อทั้งหมดของออเดอร์
 exports.findOrderItems = async (orderId) => {
   const [rows] = await db.query(

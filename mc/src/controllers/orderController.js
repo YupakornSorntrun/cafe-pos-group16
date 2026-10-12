@@ -1,5 +1,6 @@
 const orderModel = require("../models/orderModel");
 const menuModel = require("../models/menuModel");
+const { Order } = require("../models/Order"); // Domain class (wk06)
 
 const VALID_PAYMENT_METHODS = ["cash", "credit", "qr"];
 const VALID_ORDER_TYPES = ["dine_in", "takeaway"];
@@ -45,18 +46,18 @@ exports.createOrder = async (req, res) => {
   const finalItems = Object.values(groupedItemsMap);
 
   try {
-    let subtotalAmount = 0;
+    // สร้าง object Order (Domain class) แล้วใส่รายการสินค้าที่ราคามาจาก DB
+    const order = new Order(paymentMethod);
     const requiredIngredients = {};
 
-    // 2. ตรวจสอบเมนู คำนวณราคาจาก DB โดยตรง และคำนวณวัตถุดิบทั้งหมดที่ต้องใช้
+    // 2. ตรวจสอบเมนู ใช้ราคาจาก DB โดยตรง และคำนวณวัตถุดิบทั้งหมดที่ต้องใช้
     for (const item of finalItems) {
       const menu = await menuModel.findByIdAndBranchId(item.menuId, branchId);
       if (!menu) {
         return res.status(400).json({ error: `ไม่พบเมนูรหัส ${item.menuId} ในสาขานี้` });
       }
-      
-      item.price = menu.price;
-      subtotalAmount += menu.price * item.quantity;
+
+      order.addItem(menu, item.quantity); // OrderItem เก็บ snapshot ราคา (unitPrice) ไว้เอง
 
       const ingredients = await menuModel.findIngredientsByMenuId(item.menuId);
       for (const ing of ingredients) {
@@ -75,6 +76,12 @@ exports.createOrder = async (req, res) => {
       }
     }
 
+    if (!order.submit()) {
+      return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
+    }
+
+    // ยอดรวมคำนวณใน class Order (calculateTotal) แทนการบวกเองใน controller
+    const subtotalAmount = order.calculateTotal();
     const totalAmount = subtotalAmount - discountAmount;
     if (amountReceived < totalAmount) {
       return res.status(400).json({ error: "จำนวนเงินที่รับมาไม่พอ" });
@@ -115,8 +122,9 @@ exports.createOrder = async (req, res) => {
       );
 
       // 4. บันทึกไอเทมของออเดอร์
-      for (const item of finalItems) {
-        await orderModel.createOrderItem(conn, orderId, item.menuId, item.quantity, item.price);
+      order.orderId = orderId;
+      for (const item of order.items) {
+        await orderModel.createOrderItem(conn, orderId, item.menuItem.menu_id, item.quantity, item.unitPrice);
       }
 
       // 5. ตัดสต็อกและบันทึกความเคลื่อนไหว
