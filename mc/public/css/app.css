@@ -142,6 +142,12 @@ input:disabled { background: var(--bg); color: var(--ink-3); }
 .card:active .thumb { outline: 2px solid var(--ink); }
 .card .name { margin-top: 8px; color: var(--ink-2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card .price { margin-top: 4px; font-weight: 700; font-size: 15px; }
+
+/* จำนวนที่ขายได้อีก บนการ์ดเมนู (เตือนสต็อกตั้งแต่ตอนเลือกสินค้า) */
+.card .stock { margin-top: 2px; font-size: 12px; color: var(--ink-3); }
+.card .stock.low { color: var(--danger); font-weight: 600; }
+.card.soldout .thumb { opacity: .45; }
+.card.soldout .name, .card.soldout .price { color: var(--ink-3); }
 .card .badge {
   position: absolute; top: 8px; right: 8px; min-width: 24px; height: 24px; padding: 0 7px;
   background: var(--ink); color: #fff; border-radius: 12px; font-size: 12px; font-weight: 700;
@@ -181,6 +187,10 @@ input:disabled { background: var(--bg); color: var(--ink-3); }
 .sum-row { display: flex; justify-content: space-between; align-items: center; margin: 5px 0; color: var(--ink-2); }
 .sum-row .v { color: var(--ink); font-weight: 600; }
 .sum-row input { width: 110px; text-align: right; height: 32px; }
+
+/* ช่อง "รับเงินมา" ให้เด่นกว่าช่องอื่น (ผลทดสอบ usability สัปดาห์ 12: หาช่องไม่เจอ) */
+#cashBox .sum-row > span { color: var(--ink); font-weight: 600; }
+#received { width: 140px; height: 38px; border: 2px solid var(--ink); background: #fff; font-weight: 600; }
 .sum-row.total { font-size: 16px; color: var(--ink); font-weight: 700; padding-top: 8px; margin-top: 8px; border-top: 1px solid var(--line); }
 .sum-row.total .v { font-size: 20px; }
 .change-box { display: flex; justify-content: space-between; padding: 7px 12px; border-radius: 8px; background: var(--ok-bg); color: var(--ok); font-weight: 600; margin: 8px 0 10px; }
@@ -188,6 +198,7 @@ input:disabled { background: var(--bg); color: var(--ink-3); }
 .quick { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
 .quick button { height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; }
 .quick button:hover { border-color: var(--ink); }
+.quick button { border-color: var(--ink-3); }
 .reason { font-size: 12px; color: var(--ink-3); text-align: center; margin-top: 8px; min-height: 16px; }
 
 /* ---------- Pages with content area ---------- */

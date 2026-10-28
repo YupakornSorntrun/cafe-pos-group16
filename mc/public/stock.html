@@ -9,11 +9,14 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
+
 <div class="app">
   <aside class="rail" id="rail"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
     <div class="page">
+
+      <!-- แถบกรอง (ทั้งหมด/ใกล้หมด) + ปุ่มเพิ่มวัตถุดิบ -->
       <div class="toolbar">
         <div class="pill-tabs" id="filters">
           <button class="pill active" data-f="all" type="button">ทั้งหมด</button>
@@ -24,16 +27,35 @@
           <button class="btn primary" id="addBtn" type="button">+ เพิ่มวัตถุดิบ</button>
         </div>
       </div>
+
+      <!-- ตารางวัตถุดิบ -->
       <div class="panel">
         <table>
-          <thead><tr><th>วัตถุดิบ</th><th class="r">คงเหลือ</th><th class="r">แจ้งเตือนเมื่อต่ำกว่า</th><th>สถานะ</th><th class="r">ใช้ใน (เมนู)</th><th style="width:240px"></th></tr></thead>
+          <thead>
+            <tr>
+              <th>วัตถุดิบ</th>
+              <th class="r">คงเหลือ</th>
+              <th class="r">แจ้งเตือนเมื่อต่ำกว่า</th>
+              <th>สถานะ</th>
+              <th class="r">ใช้ใน (เมนู)</th>
+              <th style="width:240px"></th>
+            </tr>
+          </thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
+
     </div>
   </div>
 </div>
-<script src="/js/common.js"></script>
+
+<script src="/js/common/format.js"></script>
+<script src="/js/common/storage.js"></script>
+<script src="/js/common/api.js"></script>
+<script src="/js/common/icons.js"></script>
+<script src="/js/common/ui.js"></script>
+<script src="/js/common/shell.js"></script>
+<script src="/js/common/receipt.js"></script>
 <script src="/js/stock.js"></script>
 </body>
 </html>

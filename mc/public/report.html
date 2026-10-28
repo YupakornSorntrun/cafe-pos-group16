@@ -9,45 +9,216 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
+
 <div class="app">
   <aside class="rail" id="rail"></aside>
+
   <div class="main">
     <header class="topbar" id="topbar"></header>
+
     <div class="page">
+
+      <!-- ตัวกรอง: ช่วงวันที่ / ปุ่มลัด / สรุปตาม / พิมพ์ -->
       <div class="filters">
-        <div class="f"><label for="from">ตั้งแต่วันที่</label><input type="date" id="from"></div>
-        <div class="f"><label for="to">ถึงวันที่</label><input type="date" id="to"></div>
-        <div class="f"><label>ช่วงเวลา</label>
+        <div class="f">
+          <label for="from">ตั้งแต่วันที่</label>
+          <input type="date" id="from">
+        </div>
+
+        <div class="f">
+          <label for="to">ถึงวันที่</label>
+          <input type="date" id="to">
+        </div>
+
+        <div class="f">
+          <label>ช่วงเวลา</label>
           <div class="pill-tabs" id="presets">
             <button class="pill" data-p="today" type="button">วันนี้</button>
             <button class="pill" data-p="7d" type="button">7 วันล่าสุด</button>
             <button class="pill" data-p="month" type="button">เดือนนี้</button>
           </div>
         </div>
-        <div class="f"><label>สรุปตาม</label>
-          <div class="seg" id="groupSeg" style="width:150px"><button type="button" data-g="day" class="active">รายวัน</button><button type="button" data-g="month">รายเดือน</button></div>
+
+        <div class="f">
+          <label>สรุปตาม</label>
+          <div class="seg" id="groupSeg" style="width:150px">
+            <button type="button" data-g="day" class="active">รายวัน</button>
+            <button type="button" data-g="month">รายเดือน</button>
+          </div>
         </div>
+
         <button class="btn" id="printBtn" type="button">พิมพ์รายงาน</button>
       </div>
+
       <div class="err" id="rangeErr" style="margin:-8px 0 12px"></div>
 
+      <!-- ตัวเลขสรุป 4 ช่อง -->
       <div class="kpis" id="kpis"></div>
 
+      <!-- สรุปรายวัน/รายเดือน และแยกตามวิธีชำระเงิน -->
       <div class="two">
-        <div class="panel"><div class="panel-head"><h2 id="groupTitle">สรุปยอดขายรายวัน</h2></div>
-          <table><thead><tr><th id="groupCol">วันที่</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย</th></tr></thead><tbody id="groupRows"></tbody></table></div>
-        <div class="panel"><div class="panel-head"><h2>แยกตามวิธีชำระเงิน</h2></div>
-          <table><thead><tr><th>วิธีชำระ</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย</th><th style="width:90px"></th></tr></thead><tbody id="payRows"></tbody></table></div>
-      </div>
-      <div class="panel" id="branchPanel" style="margin-bottom:16px;display:none"><div class="panel-head"><h2>แยกตามสาขา</h2></div>
-        <table><thead><tr><th>สาขา</th><th class="r">ออเดอร์</th><th class="r">ยอดขาย</th><th style="width:200px"></th></tr></thead><tbody id="branchRows"></tbody></table></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2 id="groupTitle">สรุปยอดขายรายวัน</h2>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th id="groupCol">วันที่</th>
+                <th class="r">ออเดอร์</th>
+                <th class="r">ยอดขาย</th>
+              </tr>
+            </thead>
+            <tbody id="groupRows"></tbody>
+          </table>
+        </div>
 
-      <div class="panel"><div class="panel-head"><h2>รายการออเดอร์</h2><span class="hint" id="orderCount"></span></div>
-        <table><thead><tr><th>คิว</th><th>เวลา</th><th>สาขา</th><th>ประเภท</th><th>ชำระโดย</th><th class="r">ยอดสุทธิ</th><th>สถานะ</th><th style="width:170px"></th></tr></thead><tbody id="orderRows"></tbody></table></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>แยกตามวิธีชำระเงิน</h2>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>วิธีชำระ</th>
+                <th class="r">ออเดอร์</th>
+                <th class="r">ยอดขาย</th>
+                <th style="width:90px"></th>
+              </tr>
+            </thead>
+            <tbody id="payRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- แยกตามสาขา (แสดงเมื่อเลือก "ทุกสาขา") -->
+      <div class="panel" id="branchPanel" style="margin-bottom:16px;display:none">
+        <div class="panel-head">
+          <h2>แยกตามสาขา</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>สาขา</th>
+              <th class="r">ออเดอร์</th>
+              <th class="r">ยอดขาย</th>
+              <th style="width:200px"></th>
+            </tr>
+          </thead>
+          <tbody id="branchRows"></tbody>
+        </table>
+      </div>
+
+      <!-- ยอดขายแยกตามเมนู (ข้อมูลจาก GET /api/reports/sales) -->
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-head">
+          <h2>ยอดขายแยกตามเมนู</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>เมนู</th>
+              <th class="r">จำนวนที่ขาย</th>
+              <th class="r">ยอดขาย</th>
+              <th style="width:200px"></th>
+            </tr>
+          </thead>
+          <tbody id="menuRows"></tbody>
+        </table>
+      </div>
+
+      <!-- รายการออเดอร์ -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>รายการออเดอร์</h2>
+          <span class="hint" id="orderCount"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>คิว</th>
+              <th>เวลา</th>
+              <th>สาขา</th>
+              <th>ประเภท</th>
+              <th>ชำระโดย</th>
+              <th class="r">ยอดสุทธิ</th>
+              <th>สถานะ</th>
+              <th style="width:170px"></th>
+            </tr>
+          </thead>
+          <tbody id="orderRows"></tbody>
+        </table>
+      </div>
+
     </div>
   </div>
 </div>
-<script src="/js/common.js"></script>
+
+<!-- ===== แม่แบบ (template) ที่ report.js คัดลอกไปเติมข้อมูล — ไม่แสดงบนหน้าจอ ===== -->
+
+<!-- แถวว่าง: ไม่มีข้อมูลในช่วงเวลานี้ -->
+<template id="emptyRowTemplate">
+  <tr>
+    <td class="hint" style="text-align:center;padding:24px">ไม่มีข้อมูลในช่วงเวลานี้</td>
+  </tr>
+</template>
+
+<!-- ช่องตัวเลขสรุป (KPI) -->
+<template id="kpiTemplate">
+  <div class="kpi">
+    <div class="l"></div>
+    <div class="v num"></div>
+    <div class="s"></div>
+  </div>
+</template>
+
+<!-- แถวสรุปรายวัน/รายเดือน -->
+<template id="groupRowTemplate">
+  <tr>
+    <td class="cell-name"></td>
+    <td class="r num cell-count"></td>
+    <td class="r num cell-total"></td>
+  </tr>
+</template>
+
+<!-- แถวที่มีแถบสัดส่วน (วิธีชำระเงิน / สาขา / เมนู) -->
+<template id="barRowTemplate">
+  <tr>
+    <td class="cell-name"></td>
+    <td class="r num cell-count"></td>
+    <td class="r num cell-total"></td>
+    <td>
+      <div class="bar"><i class="bar-fill"></i></div>
+    </td>
+  </tr>
+</template>
+
+<!-- แถวรายการออเดอร์ -->
+<template id="orderRowTemplate">
+  <tr>
+    <td class="num"><b class="cell-queue"></b></td>
+    <td class="cell-time"></td>
+    <td class="cell-branch"></td>
+    <td class="cell-type"></td>
+    <td class="cell-pay"></td>
+    <td class="r num strike cell-total"></td>
+    <td><span class="tag cell-status"></span></td>
+    <td>
+      <div class="actions">
+        <button class="btn sm" data-act="view">ใบเสร็จ</button>
+        <button class="btn sm danger" data-act="void">ยกเลิก</button>
+      </div>
+    </td>
+  </tr>
+</template>
+
+<script src="/js/common/format.js"></script>
+<script src="/js/common/storage.js"></script>
+<script src="/js/common/api.js"></script>
+<script src="/js/common/icons.js"></script>
+<script src="/js/common/ui.js"></script>
+<script src="/js/common/shell.js"></script>
+<script src="/js/common/receipt.js"></script>
 <script src="/js/report.js"></script>
 </body>
 </html>

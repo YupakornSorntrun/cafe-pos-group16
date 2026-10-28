@@ -9,19 +9,26 @@
   <link rel="stylesheet" href="/css/app.css">
 </head>
 <body>
+
 <div class="app">
   <aside class="rail" id="rail"></aside>
   <div class="main">
     <header class="topbar" id="topbar"></header>
+
     <div class="pos">
+
+      <!-- ฝั่งซ้าย: หมวดหมู่ + การ์ดสินค้า -->
       <section class="pos-products">
         <div class="pill-tabs" id="cats"></div>
         <div class="grid" id="grid"></div>
       </section>
 
+      <!-- ฝั่งขวา: ตะกร้า + สรุปยอด + ชำระเงิน -->
       <aside class="order-panel">
         <div class="order-scroll">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><h2 style="margin:0">รายการสั่งซื้อ</h2><button class="btn sm" id="todayBtn" type="button">ออเดอร์วันนี้</button></div>
+          <div style="margin-bottom:14px">
+            <h2 style="margin:0">รายการสั่งซื้อ</h2>
+          </div>
 
           <div class="row">
             <label>ประเภท</label>
@@ -30,6 +37,7 @@
               <button type="button" data-type="takeaway">กลับบ้าน</button>
             </div>
           </div>
+
           <div class="row" id="tableRow">
             <label for="table">เลขโต๊ะ <span class="req">*</span></label>
             <div class="col">
@@ -38,33 +46,52 @@
             </div>
           </div>
 
-          <div class="sec-head"><span>รายการ</span><button class="link" id="clearCart" type="button">ล้างทั้งหมด</button></div>
+          <div class="sec-head">
+            <span>รายการ</span>
+            <button class="link" id="clearCart" type="button">ล้างทั้งหมด</button>
+          </div>
           <div id="cart"></div>
         </div>
 
         <div class="summary">
-          <div class="sum-row"><span>ยอดรวม</span><span class="v num" id="subtotal">฿0.00</span></div>
+          <div class="sum-row">
+            <span>ยอดรวม</span>
+            <span class="v num" id="subtotal">฿0.00</span>
+          </div>
+
           <div class="sum-row">
             <span>ส่วนลด (บาท)</span>
             <input type="number" id="discount" min="0" step="1" placeholder="0" inputmode="decimal">
           </div>
           <div class="err" id="discountErr" style="text-align:right"></div>
-          <div class="sum-row total"><span>ยอดสุทธิ</span><span class="v num" id="total">฿0.00</span></div>
 
-          <div class="sec-head" style="margin-top:14px"><span>การชำระเงิน</span></div>
+          <div class="sum-row total">
+            <span>ยอดสุทธิ</span>
+            <span class="v num" id="total">฿0.00</span>
+          </div>
+
+          <div class="sec-head" style="margin-top:14px">
+            <span>การชำระเงิน</span>
+          </div>
           <div class="seg" id="paySeg">
             <button type="button" data-pay="cash" class="active">เงินสด</button>
             <button type="button" data-pay="credit">บัตร</button>
             <button type="button" data-pay="qr">QR</button>
           </div>
+
           <div id="cashBox" style="margin-top:10px">
-            <div class="sum-row" style="margin:0"><span>รับเงินมา (บาท)</span>
+            <div class="sum-row" style="margin:0">
+              <span>รับเงินมา (บาท)</span>
               <input type="number" id="received" min="0" step="1" inputmode="decimal" placeholder="0">
             </div>
             <div class="quick" id="quick"></div>
             <div class="err" id="receivedErr" style="text-align:right"></div>
           </div>
-          <div class="change-box" id="changeBox"><span>เงินทอน</span><span class="num" id="change">฿0.00</span></div>
+
+          <div class="change-box" id="changeBox">
+            <span>เงินทอน</span>
+            <span class="num" id="change">฿0.00</span>
+          </div>
 
           <button class="btn primary block" id="payBtn" type="button" disabled>ชำระเงิน</button>
           <div class="reason" id="reason"></div>
@@ -73,7 +100,14 @@
     </div>
   </div>
 </div>
-<script src="/js/common.js"></script>
+
+<script src="/js/common/format.js"></script>
+<script src="/js/common/storage.js"></script>
+<script src="/js/common/api.js"></script>
+<script src="/js/common/icons.js"></script>
+<script src="/js/common/ui.js"></script>
+<script src="/js/common/shell.js"></script>
+<script src="/js/common/receipt.js"></script>
 <script src="/js/pos.js"></script>
 </body>
 </html>

@@ -159,7 +159,10 @@ exports.findDetail = async (orderId) => {
 };
 
 exports.findById = async (orderId) => {
-  const [rows] = await db.query(ORDER_SELECT_QUERY + `WHERE o.order_id = ? GROUP BY o.order_id`, [orderId]);
+  const [rows] = await db.query(
+    ORDER_SELECT_QUERY + `WHERE o.order_id = ? GROUP BY o.order_id`,
+    [orderId]
+  );
   return rows[0] || null;
 };
 

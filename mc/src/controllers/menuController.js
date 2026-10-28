@@ -50,17 +50,29 @@ const parseRecipe = (raw) => {
   if (!Array.isArray(raw)) return { error: "รูปแบบสูตรวัตถุดิบไม่ถูกต้อง" };
   const seen = new Set();
   for (const r of raw) {
-    if (!r || !Number.isInteger(r.ingredientId) || r.ingredientId <= 0) return { error: "ต้องเลือกวัตถุดิบให้ครบทุกแถว" };
-    if (!Number.isFinite(r.quantityUsed) || r.quantityUsed <= 0) return { error: "ปริมาณวัตถุดิบต้องมากกว่า 0" };
-    if (seen.has(r.ingredientId)) return { error: "เลือกวัตถุดิบซ้ำในสูตรเดียวกันไม่ได้" };
+    if (!r || !Number.isInteger(r.ingredientId) || r.ingredientId <= 0) {
+      return { error: "ต้องเลือกวัตถุดิบให้ครบทุกแถว" };
+    }
+    if (!Number.isFinite(r.quantityUsed) || r.quantityUsed <= 0) {
+      return { error: "ปริมาณวัตถุดิบต้องมากกว่า 0" };
+    }
+    if (seen.has(r.ingredientId)) {
+      return { error: "เลือกวัตถุดิบซ้ำในสูตรเดียวกันไม่ได้" };
+    }
     seen.add(r.ingredientId);
   }
-  return { recipe: raw.map((r) => ({ ingredientId: r.ingredientId, quantityUsed: r.quantityUsed })) };
+  const recipe = raw.map((r) => ({
+    ingredientId: r.ingredientId,
+    quantityUsed: r.quantityUsed,
+  }));
+  return { recipe };
 };
 
 // recipeErrorResponse(): แปลง error ของฐานข้อมูลเป็นข้อความที่อ่านรู้เรื่อง (วัตถุดิบที่อ้างไม่มีอยู่จริง -> 400)
 const recipeErrorResponse = (error, res) => {
-  if (error.code === "ER_NO_REFERENCED_ROW_2") return res.status(400).json({ error: "ไม่พบวัตถุดิบที่เลือก" });
+  if (error.code === "ER_NO_REFERENCED_ROW_2") {
+    return res.status(400).json({ error: "ไม่พบวัตถุดิบที่เลือก" });
+  }
   console.error(error);
   return res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกข้อมูล" });
 };
@@ -83,7 +95,14 @@ exports.createMenu = async (req, res) => {
   if (parsed.error) return res.status(400).json({ error: parsed.error });
 
   try {
-    const menuId = await menuModel.create(branchId, catId, name.trim(), price, imageUrl, parsed.recipe);
+    const menuId = await menuModel.create(
+      branchId,
+      catId,
+      name.trim(),
+      price,
+      imageUrl,
+      parsed.recipe
+    );
     res.status(201).json({ message: "สร้างเมนูสำเร็จ", menuId });
   } catch (error) {
     recipeErrorResponse(error, res);
@@ -109,7 +128,15 @@ exports.updateMenu = async (req, res) => {
   if (parsed.error) return res.status(400).json({ error: parsed.error });
 
   try {
-    const affectedRows = await menuModel.update(menuId, branchId, catId, name.trim(), price, imageUrl, parsed.recipe);
+    const affectedRows = await menuModel.update(
+      menuId,
+      branchId,
+      catId,
+      name.trim(),
+      price,
+      imageUrl,
+      parsed.recipe
+    );
     if (affectedRows === 0) {
       return res.status(404).json({ error: "ไม่พบเมนูในสาขานี้" });
     }

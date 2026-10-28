@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ประวัติออเดอร์ · Baristech Cafe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+
+<div class="app">
+  <aside class="rail" id="rail"></aside>
+
+  <div class="main">
+    <header class="topbar" id="topbar"></header>
+
+    <div class="page">
+
+      <!-- ออเดอร์วันนี้ของสาขาตัวเอง (server บังคับ "วันนี้ + สาขาตัวเอง" ให้แคชเชียร์) -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2>ออเดอร์วันนี้</h2>
+          <span class="hint" id="orderCount"></span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>คิว</th>
+              <th>เวลา</th>
+              <th class="r">ยอด</th>
+              <th>สถานะ</th>
+              <th style="width:170px"></th>
+            </tr>
+          </thead>
+          <tbody id="orderRows"></tbody>
+        </table>
+      </div>
+
+      <p class="hint" style="margin-top:10px">
+        ยกเลิกได้เฉพาะออเดอร์ที่บาริสต้ายังไม่เริ่มทำ (สถานะ "รอทำ") — คืนเงินลูกค้าด้วยตัวเอง
+      </p>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== แม่แบบ (template) ที่ orders.js คัดลอกไปเติมข้อมูล — ไม่แสดงบนหน้าจอ ===== -->
+
+<!-- แถวว่าง -->
+<template id="emptyRowTemplate">
+  <tr>
+    <td colspan="5" class="hint" style="text-align:center;padding:24px">วันนี้ยังไม่มีออเดอร์</td>
+  </tr>
+</template>
+
+<!-- แถวออเดอร์ 1 แถว -->
+<template id="orderRowTemplate">
+  <tr>
+    <td class="num"><b class="cell-queue"></b></td>
+    <td class="cell-time"></td>
+    <td class="r num cell-total"></td>
+    <td><span class="tag cell-status"></span></td>
+    <td>
+      <div class="actions">
+        <button class="btn sm" data-act="view">ใบเสร็จ</button>
+        <button class="btn sm danger" data-act="cancel">ยกเลิก</button>
+      </div>
+    </td>
+  </tr>
+</template>
+
+<script src="/js/common/format.js"></script>
+<script src="/js/common/storage.js"></script>
+<script src="/js/common/api.js"></script>
+<script src="/js/common/icons.js"></script>
+<script src="/js/common/ui.js"></script>
+<script src="/js/common/shell.js"></script>
+<script src="/js/common/receipt.js"></script>
+<script src="/js/orders.js"></script>
+</body>
+</html>

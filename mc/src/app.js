@@ -37,6 +37,9 @@ app.use("/api/orders", orderRoutes);
 const menuRoutes = require("./routes/menuRoutes");
 app.use("/api/menu", menuRoutes);
 
+// รายงานยอดขาย (เฉพาะเจ้าของ — ตรวจในไฟล์ route)
+app.use("/api/reports", require("./routes/reportRoutes"));
+
 // วัตถุดิบ (เฉพาะเจ้าของ — ตรวจในไฟล์ route)
 app.use("/api/ingredients", require("./routes/ingredientRoutes"));
 // สาขา/หมวดหมู่: ต้องล็อกอิน (ทั้งเจ้าของและแคชเชียร์) | อัปโหลดรูป: เฉพาะเจ้าของ

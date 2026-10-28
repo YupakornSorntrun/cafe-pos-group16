@@ -48,11 +48,16 @@ exports.create = (branchId, categoryId, name, price, imageUrl, recipe = []) =>
 
 // ---------- READ ----------
 // ดึงเมนูทั้งหมดของสาขา (พร้อมชื่อ category)
+// available_qty = ขายได้อีกกี่ชิ้น นับจากวัตถุดิบที่เหลือน้อยที่สุดในสูตร (NULL = เมนูที่ยังไม่มีสูตร ไม่จำกัด)
 exports.findByBranchId = async (branchId) => {
   const [rows] = await db.query(
     `SELECT m.menu_id, m.branch_id, m.category_id, c.name AS category_name,
             m.name, m.price, m.image_url,
-            (SELECT COUNT(*) FROM menu_item_ingredients mii WHERE mii.menu_id = m.menu_id) AS ingredient_count
+            (SELECT COUNT(*) FROM menu_item_ingredients mii WHERE mii.menu_id = m.menu_id) AS ingredient_count,
+            (SELECT MIN(FLOOR(i.stock_quantity / r.quantity_used))
+             FROM menu_item_ingredients r
+             JOIN ingredients i ON i.ingredient_id = r.ingredient_id
+             WHERE r.menu_id = m.menu_id) AS available_qty
      FROM menu_items m
      JOIN categories c ON m.category_id = c.category_id
      WHERE m.branch_id = ?
@@ -105,9 +110,15 @@ exports.update = (menuId, branchId, categoryId, name, price, imageUrl, recipe) =
 // ลบสูตรก่อนแล้วค่อยลบเมนู; ถ้าเมนูเคยอยู่ในออเดอร์ FK จะ error → rollback ทั้งหมด
 exports.deleteMenu = (menuId, branchId) =>
   inTransaction(async (conn) => {
-    const [owned] = await conn.query("SELECT menu_id FROM menu_items WHERE menu_id = ? AND branch_id = ?", [menuId, branchId]);
+    const [owned] = await conn.query(
+      "SELECT menu_id FROM menu_items WHERE menu_id = ? AND branch_id = ?",
+      [menuId, branchId]
+    );
     if (owned.length === 0) return 0;
     await conn.query("DELETE FROM menu_item_ingredients WHERE menu_id = ?", [menuId]);
-    const [result] = await conn.query("DELETE FROM menu_items WHERE menu_id = ? AND branch_id = ?", [menuId, branchId]);
+    const [result] = await conn.query(
+      "DELETE FROM menu_items WHERE menu_id = ? AND branch_id = ?",
+      [menuId, branchId]
+    );
     return result.affectedRows;
   });

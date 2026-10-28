@@ -20,13 +20,26 @@ exports.createOrder = async (req, res) => {
   } = req.body;
 
   // 1. Validate basic inputs
-  if (!Number.isInteger(branchId) || branchId <= 0) return res.status(400).json({ error: "ต้องระบุ branchId" });
-  if (!Number.isInteger(employeeId) || employeeId <= 0) return res.status(400).json({ error: "ต้องระบุ employeeId" });
-  if (!VALID_ORDER_TYPES.includes(orderType)) return res.status(400).json({ error: "ต้องระบุ orderType (dine_in/takeaway)" });
-  if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) return res.status(400).json({ error: "paymentMethod ไม่ถูกต้อง" });
-  if (amountReceived == null || amountReceived < 0) return res.status(400).json({ error: "ต้องระบุ amountReceived" });
-  if (!Array.isArray(items) || items.length === 0) return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
-  if (typeof discountAmount !== "number" || !Number.isFinite(discountAmount) || discountAmount < 0) {
+  if (!Number.isInteger(branchId) || branchId <= 0) {
+    return res.status(400).json({ error: "ต้องระบุ branchId" });
+  }
+  if (!Number.isInteger(employeeId) || employeeId <= 0) {
+    return res.status(400).json({ error: "ต้องระบุ employeeId" });
+  }
+  if (!VALID_ORDER_TYPES.includes(orderType)) {
+    return res.status(400).json({ error: "ต้องระบุ orderType (dine_in/takeaway)" });
+  }
+  if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) {
+    return res.status(400).json({ error: "paymentMethod ไม่ถูกต้อง" });
+  }
+  if (amountReceived == null || amountReceived < 0) {
+    return res.status(400).json({ error: "ต้องระบุ amountReceived" });
+  }
+  if (!Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
+  }
+  const discountIsNumber = typeof discountAmount === "number" && Number.isFinite(discountAmount);
+  if (!discountIsNumber || discountAmount < 0) {
     return res.status(400).json({ error: "ส่วนลดต้องเป็นตัวเลขและไม่ติดลบ" });
   }
 
@@ -34,8 +47,12 @@ exports.createOrder = async (req, res) => {
   // สร้าง Object ว่างๆ เพื่อเก็บเมนู โดยใช้ menuId เป็น Key
   const groupedItemsMap = {};
   for (const item of items) { // วนลูป (Loop) ดูรายการสินค้าทีละชิ้น
-    if (!Number.isInteger(item.menuId) || item.menuId <= 0) return res.status(400).json({ error: "menuId ไม่ถูกต้อง" });
-    if (!Number.isInteger(item.quantity) || item.quantity <= 0) return res.status(400).json({ error: "quantity ต้องมากกว่า 0" });
+    if (!Number.isInteger(item.menuId) || item.menuId <= 0) {
+      return res.status(400).json({ error: "menuId ไม่ถูกต้อง" });
+    }
+    if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
+      return res.status(400).json({ error: "quantity ต้องมากกว่า 0" });
+    }
     
     // ถ้าเคยเจอเมนูนี้แล้ว ให้เอาจำนวน (quantity) บวกเพิ่มเข้าไป
     if (groupedItemsMap[item.menuId]) {
@@ -130,7 +147,13 @@ exports.createOrder = async (req, res) => {
       // 4. บันทึกไอเทมของออเดอร์
       order.orderId = orderId;
       for (const item of order.items) {
-        await orderModel.createOrderItem(conn, orderId, item.menuItem.menu_id, item.quantity, item.unitPrice);
+        await orderModel.createOrderItem(
+          conn,
+          orderId,
+          item.menuItem.menu_id,
+          item.quantity,
+          item.unitPrice
+        );
       }
 
       // 5. ตัดสต็อกและบันทึกความเคลื่อนไหว
@@ -261,7 +284,9 @@ exports.deleteOrder = async (req, res) => {
       }
       if (isCashier && locked.barista_status !== "pending") {
         await conn.rollback();
-        return res.status(409).json({ error: "บาริสต้าเริ่มทำออเดอร์นี้แล้ว แคชเชียร์ยกเลิกไม่ได้ — กรุณาแจ้งเจ้าของร้าน" });
+        return res.status(409).json({
+          error: "บาริสต้าเริ่มทำออเดอร์นี้แล้ว แคชเชียร์ยกเลิกไม่ได้ — กรุณาแจ้งเจ้าของร้าน",
+        });
       }
       restored = locked.barista_status === "pending";
       if (restored) {

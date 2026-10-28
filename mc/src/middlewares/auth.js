@@ -15,7 +15,8 @@ exports.authenticateToken = (req, res, next) => {
     next();
   } catch (err) {
     const expired = err.name === "TokenExpiredError";
-    res.status(401).json({ error: expired ? "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่" : "Token ไม่ถูกต้อง" });
+    const message = expired ? "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่" : "Token ไม่ถูกต้อง";
+    res.status(401).json({ error: message });
   }
 };
 
