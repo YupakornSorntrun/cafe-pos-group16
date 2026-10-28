@@ -32,8 +32,23 @@ exports.createOrder = async (req, res) => {
   if (!VALID_PAYMENT_METHODS.includes(paymentMethod)) {
     return res.status(400).json({ error: "paymentMethod ไม่ถูกต้อง" });
   }
-  if (amountReceived == null || amountReceived < 0) {
-    return res.status(400).json({ error: "ต้องระบุ amountReceived" });
+  const receivedIsNumber = typeof amountReceived === "number" && Number.isFinite(amountReceived);
+  if (!receivedIsNumber || amountReceived < 0) {
+    return res.status(400).json({ error: "ต้องระบุ amountReceived เป็นตัวเลขที่ไม่ติดลบ" });
+  }
+
+  // ทานที่ร้านต้องระบุเลขโต๊ะ (AC-01 ของ US-02) และไม่เกิน 10 ตัวอักษรตาม schema (orders.table_number)
+  // กลับบ้านไม่ใช้เลขโต๊ะ (เก็บเป็น null)
+  let cleanTableNumber = null;
+  if (orderType === "dine_in") {
+    const tableText = typeof tableNumber === "string" ? tableNumber.trim() : "";
+    if (tableText === "") {
+      return res.status(400).json({ error: "กรุณาระบุเลขโต๊ะ" });
+    }
+    if (tableText.length > 10) {
+      return res.status(400).json({ error: "เลขโต๊ะต้องไม่เกิน 10 ตัวอักษร" });
+    }
+    cleanTableNumber = tableText;
   }
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "ต้องมีรายการสินค้าอย่างน้อย 1 รายการ" });
@@ -140,7 +155,7 @@ exports.createOrder = async (req, res) => {
       // 3. บันทึกออเดอร์ (ไม่เก็บค่า total_amount และอื่นๆ ที่เป็น Derived Value แล้ว)
       queueNo = await orderModel.nextQueueNo(conn, branchId);
       orderId = await orderModel.createOrder(
-        conn, branchId, employeeId, orderType, tableNumber, paymentMethod,
+        conn, branchId, employeeId, orderType, cleanTableNumber, paymentMethod,
         discountAmount, amountReceived, queueNo
       );
 
@@ -159,7 +174,18 @@ exports.createOrder = async (req, res) => {
       // 5. ตัดสต็อกและบันทึกความเคลื่อนไหว
       // วนลูปวัตถุดิบที่ต้องใช้ เพื่อตัดสต็อกทีละตัว
       for (const [id, ing] of Object.entries(requiredIngredients)) {
-        await orderModel.updateStockAndRecordMovement(conn, ing.ingredientId, ing.needed, orderId);
+        const enough = await orderModel.updateStockAndRecordMovement(
+          conn,
+          ing.ingredientId,
+          ing.needed,
+          orderId
+        );
+        if (!enough) {
+          // มีออเดอร์อื่นตัดสต็อกตัวนี้ไปก่อนระหว่างที่เรากำลังทำรายการ -> ยกเลิกทั้งออเดอร์ (ROLLBACK)
+          const stockError = new Error("INSUFFICIENT_STOCK");
+          stockError.ingredientName = ing.name;
+          throw stockError;
+        }
         
         // BR-04: ตรวจสอบว่าหลังตัดสต็อกแล้วต่ำกว่าเกณฑ์แจ้งเตือนหรือไม่
         if (ing.stock - ing.needed <= ing.threshold) {
@@ -196,6 +222,9 @@ exports.createOrder = async (req, res) => {
     });
 
   } catch (error) {
+    if (error.ingredientName) {
+      return res.status(400).json({ error: `วัตถุดิบไม่เพียงพอ: ${error.ingredientName}` });
+    }
     console.error(error);
     res.status(500).json({ error: "เกิดข้อผิดพลาดในการบันทึกออเดอร์" });
   }

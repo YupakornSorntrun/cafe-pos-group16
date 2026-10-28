@@ -56,6 +56,19 @@ app.use((req, res) => {
   });
 });
 
+// ตัวจัดการ error กลาง: ตอบเป็น JSON เสมอ และไม่ส่ง stack trace ออกไปให้ผู้ใช้เห็น
+// (ต้องวางหลัง route ทั้งหมด) เช่น ผู้ใช้ส่ง JSON ที่พัง/ไม่ครบมา
+app.use((err, req, res, next) => {
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ error: "รูปแบบข้อมูลที่ส่งมาไม่ถูกต้อง (JSON)" });
+  }
+  if (err.status && err.status < 500) {
+    return res.status(err.status).json({ error: "คำขอไม่ถูกต้อง" });
+  }
+  console.error(err);
+  res.status(500).json({ error: "เกิดข้อผิดพลาดภายในระบบ" });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Cafe POS server running on port ${PORT}`);

@@ -59,18 +59,27 @@ exports.createOrderItem = async (conn, orderId, menuId, quantity, unitPrice) => 
   return result.insertId;
 };
 
-// อัปเดตสต็อกและบันทึกความเคลื่อนไหว (Transaction เดียวกัน)
+// ตัดสต็อกและบันทึกความเคลื่อนไหว (Transaction เดียวกัน)
+// ตัดแบบ "เช็กและตัดในคำสั่งเดียว" (WHERE stock_quantity >= ?) เพื่อกัน race condition:
+// ถ้ามี 2 ออเดอร์ตัดวัตถุดิบตัวเดียวกันพร้อมกัน MySQL จะล็อกแถวนั้น ออเดอร์ที่มาทีหลังต้องรอ
+// แล้วเช็กกับจำนวนล่าสุด จึงไม่มีทางตัดจนสต็อกติดลบ
+// คืน true ถ้าตัดสำเร็จ, คืน false ถ้าสต็อกไม่พอ (ไม่ตัดและไม่บันทึกอะไรเลย)
 exports.updateStockAndRecordMovement = async (conn, ingredientId, quantityUsed, orderId) => {
-  await conn.query(
-    `UPDATE ingredients SET stock_quantity = stock_quantity - ? WHERE ingredient_id = ?`,
-    [quantityUsed, ingredientId]
+  const [result] = await conn.query(
+    `UPDATE ingredients SET stock_quantity = stock_quantity - ?
+     WHERE ingredient_id = ? AND stock_quantity >= ?`,
+    [quantityUsed, ingredientId, quantityUsed]
   );
+  if (result.affectedRows === 0) {
+    return false;
+  }
 
   await conn.query(
     `INSERT INTO stock_movements (ingredient_id, order_id, quantity_change, reason, moved_at)
      VALUES (?, ?, ?, 'sale', NOW())`,
     [ingredientId, orderId, -quantityUsed]
   );
+  return true;
 };
 
 // คืนสต็อกและบันทึกความเคลื่อนไหว (Transaction เดียวกัน)
